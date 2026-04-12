@@ -64,11 +64,15 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    sponsors: SponsorAuthOperations;
   };
   blocks: {};
   collections: {
     users: User;
     media: Media;
+    sponsors: Sponsor;
+    events: Event;
+    plans: Plan;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,13 +82,16 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    sponsors: SponsorsSelect<false> | SponsorsSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    plans: PlansSelect<false> | PlansSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
   globals: {};
@@ -93,7 +100,7 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | Sponsor;
   jobs: {
     tasks: unknown;
     workflows: unknown;
@@ -117,12 +124,30 @@ export interface UserAuthOperations {
     password: string;
   };
 }
+export interface SponsorAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -147,8 +172,11 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
-  alt: string;
+  id: number;
+  /**
+   * Se autocompleta con el nombre del archivo si se deja en blanco.
+   */
+  alt?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -163,10 +191,193 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sponsors".
+ */
+export interface Sponsor {
+  id: number;
+  eventsSummary?: string | null;
+  currentPlanName?: string | null;
+  companyName: string;
+  logo?: (number | null) | Media;
+  contactInfo?: {
+    fullName?: string | null;
+    whatsapp?: string | null;
+    corporateEmail?: string | null;
+    linkedin?: string | null;
+  };
+  whatsappGroup?: {
+    link?: string | null;
+    joined?: boolean | null;
+  };
+  documents?:
+    | {
+        name?: string | null;
+        file?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  eventParticipations?:
+    | {
+        isCurrent?: boolean | null;
+        event: number | Event;
+        plan: number | Plan;
+        strategy?: {
+          description?: string | null;
+          eventObjectives?: string | null;
+          brandDifferentiator?: string | null;
+        };
+        meetings?:
+          | {
+              name?: string | null;
+              projectedMonth?: string | null;
+              calendlyLink?: string | null;
+              platform?: string | null;
+              status?: ('pending' | 'scheduled' | 'completed') | null;
+              scheduledDate?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        deliverables?:
+          | {
+              benefitCategory?: string | null;
+              itemName?: string | null;
+              type?: ('document' | 'image' | 'text' | 'link' | 'direct') | null;
+              status?: ('pending' | 'completed' | 'overdue') | null;
+              dueDate?: string | null;
+              uploadedFile?: (number | null) | Media;
+              uploadedText?: string | null;
+              uploadedLink?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        /**
+         * Ítems heredados del plan. Sube evidencias aquí para marcarlos como completados.
+         */
+        benefitItems?:
+          | {
+              benefitCategory?: string | null;
+              itemName?: string | null;
+              status?: ('not_started' | 'in_progress' | 'completed') | null;
+              evidences?:
+                | {
+                    type: 'image' | 'document' | 'text' | 'link';
+                    file?: (number | null) | Media;
+                    text?: string | null;
+                    link?: string | null;
+                    id?: string | null;
+                  }[]
+                | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  email: string;
+  resetPasswordToken?: string | null;
+  resetPasswordExpiration?: string | null;
+  salt?: string | null;
+  hash?: string | null;
+  loginAttempts?: number | null;
+  lockUntil?: string | null;
+  sessions?:
+    | {
+        id: string;
+        createdAt?: string | null;
+        expiresAt: string;
+      }[]
+    | null;
+  password?: string | null;
+  collection: 'sponsors';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  startDate: string;
+  endDate: string;
+  logo?: (number | null) | Media;
+  backgroundImage?: (number | null) | Media;
+  /**
+   * Configura el único calendario de este evento, añadiendo sus diferentes momentos e ítems.
+   */
+  journey?: {
+    moments?:
+      | {
+          momentTitle: string;
+          items?:
+            | {
+                itemTitle: string;
+                date1: string;
+                date2?: string | null;
+                id?: string | null;
+              }[]
+            | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  /**
+   * Estas reuniones se clonarán al Sponsor cuando se le asigne este evento.
+   */
+  meetingTemplates?:
+    | {
+        name: string;
+        /**
+         * Ej: "Octubre 2026" o un selector de fecha referencial.
+         */
+        projectedMonth?: string | null;
+        calendlyLink?: string | null;
+        platform?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans".
+ */
+export interface Plan {
+  id: number;
+  name: string;
+  addonsDiscount?: number | null;
+  benefits?:
+    | {
+        benefitName: string;
+        hasDeliverable?: boolean | null;
+        deliverables?:
+          | {
+              deliverableName: string;
+              type: 'document' | 'image' | 'text' | 'link' | 'direct';
+              dueDate: string;
+              id?: string | null;
+            }[]
+          | null;
+        items?:
+          | {
+              itemName: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,21 +394,38 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'sponsors';
+        value: number | Sponsor;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'plans';
+        value: number | Plan;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: string | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'sponsors';
+        value: number | Sponsor;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -206,11 +434,16 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
-  user: {
-    relationTo: 'users';
-    value: string | User;
-  };
+  id: number;
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'sponsors';
+        value: number | Sponsor;
+      };
   key?: string | null;
   value?:
     | {
@@ -229,7 +462,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -274,6 +507,180 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sponsors_select".
+ */
+export interface SponsorsSelect<T extends boolean = true> {
+  eventsSummary?: T;
+  currentPlanName?: T;
+  companyName?: T;
+  logo?: T;
+  contactInfo?:
+    | T
+    | {
+        fullName?: T;
+        whatsapp?: T;
+        corporateEmail?: T;
+        linkedin?: T;
+      };
+  whatsappGroup?:
+    | T
+    | {
+        link?: T;
+        joined?: T;
+      };
+  documents?:
+    | T
+    | {
+        name?: T;
+        file?: T;
+        id?: T;
+      };
+  eventParticipations?:
+    | T
+    | {
+        isCurrent?: T;
+        event?: T;
+        plan?: T;
+        strategy?:
+          | T
+          | {
+              description?: T;
+              eventObjectives?: T;
+              brandDifferentiator?: T;
+            };
+        meetings?:
+          | T
+          | {
+              name?: T;
+              projectedMonth?: T;
+              calendlyLink?: T;
+              platform?: T;
+              status?: T;
+              scheduledDate?: T;
+              id?: T;
+            };
+        deliverables?:
+          | T
+          | {
+              benefitCategory?: T;
+              itemName?: T;
+              type?: T;
+              status?: T;
+              dueDate?: T;
+              uploadedFile?: T;
+              uploadedText?: T;
+              uploadedLink?: T;
+              id?: T;
+            };
+        benefitItems?:
+          | T
+          | {
+              benefitCategory?: T;
+              itemName?: T;
+              status?: T;
+              evidences?:
+                | T
+                | {
+                    type?: T;
+                    file?: T;
+                    text?: T;
+                    link?: T;
+                    id?: T;
+                  };
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  email?: T;
+  resetPasswordToken?: T;
+  resetPasswordExpiration?: T;
+  salt?: T;
+  hash?: T;
+  loginAttempts?: T;
+  lockUntil?: T;
+  sessions?:
+    | T
+    | {
+        id?: T;
+        createdAt?: T;
+        expiresAt?: T;
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  startDate?: T;
+  endDate?: T;
+  logo?: T;
+  backgroundImage?: T;
+  journey?:
+    | T
+    | {
+        moments?:
+          | T
+          | {
+              momentTitle?: T;
+              items?:
+                | T
+                | {
+                    itemTitle?: T;
+                    date1?: T;
+                    date2?: T;
+                    id?: T;
+                  };
+              id?: T;
+            };
+      };
+  meetingTemplates?:
+    | T
+    | {
+        name?: T;
+        projectedMonth?: T;
+        calendlyLink?: T;
+        platform?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "plans_select".
+ */
+export interface PlansSelect<T extends boolean = true> {
+  name?: T;
+  addonsDiscount?: T;
+  benefits?:
+    | T
+    | {
+        benefitName?: T;
+        hasDeliverable?: T;
+        deliverables?:
+          | T
+          | {
+              deliverableName?: T;
+              type?: T;
+              dueDate?: T;
+              id?: T;
+            };
+        items?:
+          | T
+          | {
+              itemName?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
