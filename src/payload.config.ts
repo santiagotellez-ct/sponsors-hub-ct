@@ -30,7 +30,6 @@ export default buildConfig({
           url: '/icon-colombia-tech.png',
         },
       ],
-      ogImage: '/logo-colombia-tech.png',
     },
     components: {
       graphics: {
