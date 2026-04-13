@@ -347,6 +347,58 @@ export const Sponsors: CollectionConfig = {
             console.error('Error enviando el correo de evidencia:', error)
           }
         }
+
+        // 3. WEBHOOK HACIA N8N (Sincronización con Notion)
+        if (
+          operation === 'update' &&
+          doc.contactInfo?.fullName &&
+          doc.eventParticipations?.length > 0
+        ) {
+          try {
+            // Buscamos la participación activa para extraer su estrategia
+            const activeParticipation =
+              doc.eventParticipations.find((p: any) => p.isCurrent) || doc.eventParticipations[0]
+
+            // Extraemos los nombres de todos los eventos y planes asignados
+            const assignedEvents = doc.eventParticipations
+              .map((p: any) => (typeof p.event === 'object' ? p.event.title : p.event))
+              .filter(Boolean)
+            const assignedPlans = doc.eventParticipations
+              .map((p: any) => (typeof p.plan === 'object' ? p.plan.name : p.plan))
+              .filter(Boolean)
+
+            const payloadToN8n = {
+              sponsorId: doc.id,
+              companyName: doc.companyName,
+              emailCorporate: doc.contactInfo?.corporateEmail || doc.email,
+              emailUser: doc.email,
+              contactName: doc.contactInfo.fullName,
+              whatsapp: doc.contactInfo.whatsapp,
+              linkedin: doc.contactInfo.linkedin,
+              events: assignedEvents,
+              plans: assignedPlans,
+              strategyDescription: activeParticipation?.strategy?.description || 'Sin definir',
+              strategyObjectives: activeParticipation?.strategy?.eventObjectives || 'Sin definir',
+              strategyDifferentiator:
+                activeParticipation?.strategy?.brandDifferentiator || 'Sin definir',
+              // Construimos la URL pública del logo usando tu bucket de S3
+              logoUrl: doc.logo?.url
+                ? `${process.env.NEXT_PUBLIC_SERVER_URL || 'https://tu-dominio.com'}${doc.logo.url}`
+                : null,
+            }
+
+            // Disparamos el webhook sin bloquear el guardado de Payload
+            fetch(process.env.N8N_WEBHOOK_URL as string, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payloadToN8n),
+            }).catch((e) => console.error('Error enviando datos a n8n:', e))
+
+            console.log(`Sincronización a n8n enviada para ${doc.companyName}`)
+          } catch (error) {
+            console.error('Error armando el payload para n8n:', error)
+          }
+        }
       },
     ],
     // 2. EL HOOK BEFORE: Aquí procesamos la lógica y atrapamos la contraseña
