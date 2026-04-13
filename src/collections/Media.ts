@@ -2,6 +2,9 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  admin: {
+    group: 'Sistema y Archivos',
+  },
   upload: true,
   access: {
     read: () => true, // Para que el frontend pueda leer los archivos

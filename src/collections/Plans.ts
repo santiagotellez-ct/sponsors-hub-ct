@@ -4,6 +4,7 @@ export const Plans: CollectionConfig = {
   slug: 'plans',
   admin: {
     useAsTitle: 'name',
+    group: 'Configuración',
   },
   fields: [
     {

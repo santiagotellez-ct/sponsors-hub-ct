@@ -1,17 +1,23 @@
 import React from 'react'
-import './styles.css'
+import { Inter } from 'next/font/google'
+import './globals.css'
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+})
 
 export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+  description: 'Sponsors Hub - Plataforma de gestión de patrocinadores',
+  title: 'Sponsors Hub',
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
 
   return (
-    <html lang="en">
-      <body>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.variable} font-sans antialiased`}>
         <main>{children}</main>
       </body>
     </html>

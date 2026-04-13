@@ -1,9 +1,15 @@
 import type { CollectionConfig } from 'payload'
+import { Resend } from 'resend'
+import WelcomeEmail from '../emails/WelcomeEmail'
+import EvidenceUploadedEmail from '../emails/EvidenceUploadedEmail'
+
+const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const Sponsors: CollectionConfig = {
   slug: 'sponsors',
   admin: {
     useAsTitle: 'companyName',
+    group: 'Gestión de Patrocinadores',
     defaultColumns: [
       'companyName',
       'contactInfo.corporateEmail',
@@ -78,7 +84,7 @@ export const Sponsors: CollectionConfig = {
           label: '¿Es el evento actual?',
           defaultValue: false,
           admin: {
-            hidden: true, // <-- CAMBIO CLAVE: Ya no estorba en la vista del Admin
+            hidden: true,
           },
         },
         {
@@ -125,7 +131,7 @@ export const Sponsors: CollectionConfig = {
               label: 'Link de Calendly',
               admin: { readOnly: true },
             },
-            { name: 'platform', type: 'text', label: 'Plataforma', admin: { readOnly: true } },
+            { name: 'platform', type: 'text', label: 'Link de Reunión / Plataforma' },
             {
               name: 'status',
               type: 'select',
@@ -255,15 +261,108 @@ export const Sponsors: CollectionConfig = {
      EL CEREBRO (AUTOMATIZACIONES Y RESÚMENES)
      ========================================== */
   hooks: {
+    // 1. EL HOOK AFTER: Aquí enviamos el correo leyendo el contexto
+    afterChange: [
+      async ({ doc, previousDoc, req, operation }) => {
+        // 1. CORREO DE BIENVENIDA (Cuando se crea)
+        if (operation === 'create') {
+          try {
+            const rawPassword = req.context.rawPassword as string
+            const contactEmail = doc.contactInfo?.corporateEmail || doc.email
+
+            if (contactEmail && rawPassword) {
+              await resend.emails.send({
+                from: 'Colombia Tech <onboarding@resend.dev>',
+                to: contactEmail,
+                subject: 'Tus credenciales de acceso | Sponsors Hub',
+                react: WelcomeEmail({
+                  companyName: doc.companyName,
+                  email: contactEmail,
+                  passwordTemp: rawPassword,
+                }),
+              })
+              console.log(`Correo de bienvenida enviado a ${contactEmail}`)
+            }
+          } catch (error) {
+            console.error('Error enviando el correo de bienvenida:', error)
+          }
+        }
+
+        // 2. CORREO DE EVIDENCIA (Cuando se actualiza)
+        if (operation === 'update' && previousDoc) {
+          try {
+            const contactEmail = doc.contactInfo?.corporateEmail || doc.email
+            if (!contactEmail) return
+
+            const currentParticipations = doc.eventParticipations || []
+            const prevParticipations = previousDoc.eventParticipations || []
+
+            // Buscamos si hay evidencias nuevas
+            let newEvidenceFound = null
+
+            for (let i = 0; i < currentParticipations.length; i++) {
+              const currentPart = currentParticipations[i]
+              const prevPart = prevParticipations[i] // Asumimos el mismo orden
+
+              if (!prevPart) continue
+
+              const currentItems = currentPart.benefitItems || []
+              const prevItems = prevPart.benefitItems || []
+
+              for (let j = 0; j < currentItems.length; j++) {
+                const currentItem = currentItems[j]
+                // Buscamos el ítem equivalente en el documento anterior
+                const prevItem =
+                  prevItems.find((pi: any) => pi.id === currentItem.id) || prevItems[j]
+
+                const currentEvidencesCount = currentItem.evidences?.length || 0
+                const prevEvidencesCount = prevItem?.evidences?.length || 0
+
+                // Si ahora hay MÁS evidencias que antes, encontramos el cambio
+                if (currentEvidencesCount > prevEvidencesCount) {
+                  newEvidenceFound = currentItem
+                  break // Con una que encontremos es suficiente para notificar
+                }
+              }
+              if (newEvidenceFound) break
+            }
+
+            // Si encontramos una evidencia nueva, disparamos el correo
+            if (newEvidenceFound) {
+              await resend.emails.send({
+                from: 'Colombia Tech <notificaciones@resend.dev>',
+                to: contactEmail,
+                subject: 'Nueva evidencia en tu patrocinio | Sponsors Hub',
+                react: EvidenceUploadedEmail({
+                  companyName: doc.companyName,
+                  itemName: newEvidenceFound.itemName,
+                  benefitCategory: newEvidenceFound.benefitCategory,
+                }),
+              })
+              console.log(
+                `Correo de evidencia enviado a ${contactEmail} por el item: ${newEvidenceFound.itemName}`,
+              )
+            }
+          } catch (error) {
+            console.error('Error enviando el correo de evidencia:', error)
+          }
+        }
+      },
+    ],
+    // 2. EL HOOK BEFORE: Aquí procesamos la lógica y atrapamos la contraseña
     beforeChange: [
-      async ({ data, req }) => {
+      async ({ data, req, operation }) => {
+        // ---> NUEVO: Atrapamos la contraseña cruda antes de que se encripte
+        if (operation === 'create' && data.password) {
+          req.context.rawPassword = data.password
+        }
+
         if (!data.eventParticipations || data.eventParticipations.length === 0) {
           data.eventsSummary = 'Ninguno'
           data.currentPlanName = 'Ninguno'
           return data
         }
 
-        // --- 1. LÓGICA AUTOMÁTICA DE EVENTO "ACTUAL" (MÁS PRÓXIMO) ---
         let futureEvents: { index: number; date: number }[] = []
         let pastEvents: { index: number; date: number }[] = []
         const now = new Date().getTime()
@@ -302,7 +401,6 @@ export const Sponsors: CollectionConfig = {
           data.eventParticipations[i].isCurrent = i === currentIndex
         }
 
-        // --- 2. LÓGICA DE COLUMNAS PARA EL PANEL DE ADMIN ---
         let summaryArray: string[] = []
         let currentPlanName = 'Ninguno actual'
 
@@ -338,11 +436,9 @@ export const Sponsors: CollectionConfig = {
         data.eventsSummary = summaryArray.length > 0 ? summaryArray.join(', ') : 'Ninguno'
         data.currentPlanName = currentPlanName
 
-        // --- 3. CLONACIÓN DE REUNIONES, ENTREGABLES Y ACTUALIZACIÓN DE ESTADOS ---
         for (let i = 0; i < data.eventParticipations.length; i++) {
           const participation = data.eventParticipations[i]
 
-          // Clonar Reuniones
           if (
             participation.event &&
             (!participation.meetings || participation.meetings.length === 0)
@@ -368,7 +464,6 @@ export const Sponsors: CollectionConfig = {
             }
           }
 
-          // Clonar Entregables e Ítems
           if (
             participation.plan &&
             (!participation.deliverables || participation.deliverables.length === 0) &&
@@ -413,7 +508,6 @@ export const Sponsors: CollectionConfig = {
             }
           }
 
-          // Actualización de Estados
           if (participation.meetings) {
             participation.meetings.forEach((meeting: any) => {
               if (meeting.scheduledDate && meeting.status === 'pending') {

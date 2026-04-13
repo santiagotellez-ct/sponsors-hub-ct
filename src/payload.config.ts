@@ -20,6 +20,26 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      titleSuffix: '- Colombia Tech',
+      // Usamos el formato estricto de iconos para v3
+      icons: [
+        {
+          rel: 'icon',
+          type: 'image/png',
+          url: '/icon-colombia-tech.png',
+        },
+      ],
+      ogImage: '/logo-colombia-tech.png',
+    },
+    components: {
+      graphics: {
+        Logo: '@/components/payload-logo#PayloadLogo',
+        Icon: '@/components/payload-logo#PayloadIcon',
+      },
+      // Inyectamos el saludo en el Dashboard
+      beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
+    },
   },
   collections: [Users, Media, Sponsors, Events, Plans],
   editor: lexicalEditor(),

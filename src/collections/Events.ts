@@ -4,6 +4,7 @@ export const Events: CollectionConfig = {
   slug: 'events',
   admin: {
     useAsTitle: 'title',
+    group: 'Configuración',
   },
   fields: [
     {
@@ -110,7 +111,12 @@ export const Events: CollectionConfig = {
           admin: { description: 'Ej: "Octubre 2026" o un selector de fecha referencial.' },
         },
         { name: 'calendlyLink', type: 'text', label: 'Link de Calendly (Embed)' },
-        { name: 'platform', type: 'text', label: 'Lugar / Proyección (Ej. Google Meet, Zoom)' },
+        // ---> CAMBIO CLAVE AQUÍ: Reflejamos el nuevo texto explicativo
+        {
+          name: 'platform',
+          type: 'text',
+          label: 'Lugar / Proyección / Link (Ej. Google Meet, Zoom)',
+        },
       ],
     },
   ],
@@ -122,7 +128,6 @@ export const Events: CollectionConfig = {
     afterChange: [
       async ({ doc, req }) => {
         try {
-          // 1. Buscamos a todos los sponsors que tengan este evento asignado
           const sponsorsToUpdate = await req.payload.find({
             collection: 'sponsors',
             where: {
@@ -134,14 +139,12 @@ export const Events: CollectionConfig = {
             limit: 1000,
           })
 
-          // 2. Les damos un "toque" forzando un guardado para que su propio Hook
-          // recalcule si este evento sigue siendo el "Actual" basado en la nueva fecha
           for (const sponsor of sponsorsToUpdate.docs) {
             await req.payload.update({
               collection: 'sponsors',
               id: sponsor.id,
               data: {
-                companyName: sponsor.companyName, // Reenviamos el nombre para forzar el trigger
+                companyName: sponsor.companyName,
               },
               req,
             })

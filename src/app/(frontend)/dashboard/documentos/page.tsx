@@ -1,0 +1,50 @@
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { getPayload } from 'payload'
+import configPromise from '@payload-config'
+
+import { AppSidebar } from '@/components/app-sidebar'
+import { SiteHeader } from '@/components/site-header'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import { DocumentosView } from '@/components/documentos-view'
+
+export const description = 'Documentos Administrativos'
+
+export default async function DocumentosPage() {
+  const payload = await getPayload({ config: configPromise })
+  const cookieStore = await cookies()
+  const token = cookieStore.get('payload-token')?.value
+
+  if (!token) redirect('/')
+
+  const { user } = await payload.auth({
+    headers: new Headers({ Authorization: `JWT ${token}` }),
+  })
+
+  if (!user || user.collection !== 'sponsors') redirect('/')
+
+  const sponsor = await payload.findByID({
+    collection: 'sponsors',
+    id: user.id,
+    depth: 2,
+  })
+
+  return (
+    <TooltipProvider>
+      <div className="[--header-height:calc(--spacing(14))]">
+        <SidebarProvider className="flex flex-col">
+          <SiteHeader />
+          <div className="flex flex-1">
+            <AppSidebar sponsor={sponsor} />
+            <SidebarInset>
+              <div className="flex flex-1 flex-col gap-4 p-4 lg:p-8 max-w-6xl mx-auto w-full">
+                <DocumentosView sponsor={sponsor} />
+              </div>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
+      </div>
+    </TooltipProvider>
+  )
+}
