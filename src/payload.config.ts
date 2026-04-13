@@ -5,11 +5,15 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+// Colecciones
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { Sponsors } from './collections/Sponsors'
 import { Plans } from './collections/Plans'
+
+// Plugin de S3
+import { s3Storage } from '@payloadcms/storage-s3'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -22,7 +26,6 @@ export default buildConfig({
     },
     meta: {
       titleSuffix: '- Colombia Tech',
-      // Usamos el formato estricto de iconos para v3
       icons: [
         {
           rel: 'icon',
@@ -36,7 +39,6 @@ export default buildConfig({
         Logo: '@/components/payload-logo#PayloadLogo',
         Icon: '@/components/payload-logo#PayloadIcon',
       },
-      // Inyectamos el saludo en el Dashboard
       beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
     },
   },
@@ -52,5 +54,21 @@ export default buildConfig({
     },
   }),
   sharp,
-  plugins: [],
+  plugins: [
+    s3Storage({
+      collections: {
+        media: true, // Esto conecta tu colección Media directamente con Supabase
+      },
+      bucket: process.env.S3_BUCKET as string,
+      config: {
+        credentials: {
+          accessKeyId: process.env.S3_ACCESS_KEY_ID as string,
+          secretAccessKey: process.env.S3_SECRET_ACCESS_KEY as string,
+        },
+        region: process.env.S3_REGION as string,
+        endpoint: process.env.S3_ENDPOINT as string,
+        forcePathStyle: true, // OBLIGATORIO para que funcione con Supabase
+      },
+    }),
+  ],
 })
