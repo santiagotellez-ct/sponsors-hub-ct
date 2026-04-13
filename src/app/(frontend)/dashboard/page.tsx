@@ -145,9 +145,9 @@ export default async function DashboardPage() {
                           </div>
                           <h3
                             className="text-2xl font-bold truncate tracking-tight mb-2"
-                            title={eventDoc?.title}
+                            title={(eventDoc as any)?.title}
                           >
-                            {eventDoc ? eventDoc.title : 'Sin Evento'}
+                            {(eventDoc as any)?.title ? (eventDoc as any).title : 'Sin Evento'}
                           </h3>
                         </div>
                         <div className="mt-auto pt-4">
