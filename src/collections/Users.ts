@@ -6,7 +6,10 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
     group: 'Sistema y Archivos',
   },
-  auth: true,
+  // 👇 AQUÍ ESTÁ LA CLAVE
+  auth: {
+    useAPIKey: true,
+  },
   fields: [
     // Email added by default
     // Add more fields as needed
