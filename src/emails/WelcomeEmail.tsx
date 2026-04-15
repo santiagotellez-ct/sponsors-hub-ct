@@ -64,7 +64,7 @@ export default function WelcomeEmail({
 
           {/* BOTÓN VERDE LIMA */}
           <Section style={buttonContainer}>
-            <Button style={button} href={`${baseUrl}/login`}>
+            <Button style={button} href={`https://prueba.tllz.cloud/login`}>
               Ingresar al Dashboard
             </Button>
           </Section>
