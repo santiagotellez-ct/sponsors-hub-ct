@@ -400,6 +400,22 @@ export const Sponsors: CollectionConfig = {
               console.log('Error enviando webhook a n8n, pero el sponsor fue guardado.', error)
             }
           }
+
+          // === NUEVO CÓDIGO A AGREGAR AQUÍ ABAJO ===
+          const webhookReunionesUrl = process.env.N8N_WEBHOOK_REUNIONES_URL
+          if (webhookReunionesUrl) {
+            try {
+              // Le enviamos solo el ID al nuevo flujo para que haga su magia
+              await fetch(webhookReunionesUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sponsorId: doc.id }),
+              })
+            } catch (error) {
+              console.log('Error enviando webhook de reuniones a n8n', error)
+            }
+          }
+          // === FIN DEL NUEVO CÓDIGO ===
         }
       },
     ],
