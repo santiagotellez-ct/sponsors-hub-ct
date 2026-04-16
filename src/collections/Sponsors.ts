@@ -416,6 +416,82 @@ export const Sponsors: CollectionConfig = {
             }
           }
           // === FIN DEL NUEVO CÓDIGO ===
+          // 4. WEBHOOK HACIA N8N (Google Drive - Subida de Logos)
+          if (operation === 'update' && previousDoc) {
+            try {
+              let newLogoDeliverable = null
+              let mediaId = null
+
+              const currentParts = doc.eventParticipations || []
+              const prevParts = previousDoc.eventParticipations || []
+
+              // 1. Buscamos si hay un entregable de "logo" recién subido
+              for (let i = 0; i < currentParts.length; i++) {
+                const currentDelivs = currentParts[i].deliverables || []
+                const prevDelivs = prevParts[i]?.deliverables || []
+
+                for (let j = 0; j < currentDelivs.length; j++) {
+                  const cDeliv = currentDelivs[j]
+                  const pDeliv = prevDelivs.find((d: any) => d.id === cDeliv.id) || prevDelivs[j]
+
+                  // Revisamos si el nombre incluye "logo" (sin importar mayúsculas) y si hay archivo
+                  if (cDeliv.itemName?.toLowerCase().includes('logo') && cDeliv.uploadedFile) {
+                    const currentFile =
+                      typeof cDeliv.uploadedFile === 'object'
+                        ? cDeliv.uploadedFile.id
+                        : cDeliv.uploadedFile
+                    const prevFile =
+                      pDeliv && pDeliv.uploadedFile
+                        ? typeof pDeliv.uploadedFile === 'object'
+                          ? pDeliv.uploadedFile.id
+                          : pDeliv.uploadedFile
+                        : null
+
+                    // Si el archivo existe ahora y es distinto al que había antes (o antes no había)
+                    if (currentFile && currentFile !== prevFile) {
+                      newLogoDeliverable = cDeliv
+                      mediaId = currentFile
+                      break
+                    }
+                  }
+                }
+                if (newLogoDeliverable) break
+              }
+
+              // 2. Si encontramos un logo nuevo, disparamos a n8n
+              if (newLogoDeliverable && mediaId) {
+                // Buscamos la URL real del archivo en la colección media
+                const mediaDoc = await req.payload.findByID({ collection: 'media', id: mediaId })
+
+                if (mediaDoc && mediaDoc.url) {
+                  // Llamamos directamente a la variable de entorno
+                  const driveWebhookUrl = process.env.N8N_WEBHOOK_DRIVE_URL
+
+                  if (driveWebhookUrl) {
+                    const payloadToDrive = {
+                      companyName: doc.companyName,
+                      itemName: newLogoDeliverable.itemName,
+                      fileName: mediaDoc.filename,
+                      // Construimos la ruta absoluta para que n8n pueda descargarlo
+                      fileUrl: `https://sponsors-hub-ct.vercel.app${mediaDoc.url}`,
+                    }
+
+                    console.log('--- TIMBRANDO WEBHOOK DRIVE PARA LOGO ---')
+                    await fetch(driveWebhookUrl, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(payloadToDrive),
+                    })
+                    console.log('--- LOGO ENVIADO A N8N ---')
+                  } else {
+                    console.log('Aviso: Falta configurar N8N_WEBHOOK_DRIVE_URL en el entorno.')
+                  }
+                }
+              }
+            } catch (e) {
+              console.log('Error en Webhook de Drive:', e)
+            }
+          }
         }
       },
     ],
