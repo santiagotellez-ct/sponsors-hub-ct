@@ -27,7 +27,7 @@ export default function WelcomeEmail({
   return (
     <Html>
       <Head />
-      <Preview>Tus credenciales de acceso a Sponsors Hub</Preview>
+      <Preview>Tus credenciales de acceso a Sponsor Hub</Preview>
       <Body style={main}>
         <Container style={card}>
           {/* NOMBRE DE LA EMPRESA (Reemplazo del logo) */}
@@ -64,7 +64,7 @@ export default function WelcomeEmail({
 
           {/* BOTÓN VERDE LIMA */}
           <Section style={buttonContainer}>
-            <Button style={button} href={`https://prueba.tllz.cloud/login`}>
+            <Button style={button} href={`https://sponsors-hub-ct.vercel.app/login`}>
               Ingresar al Dashboard
             </Button>
           </Section>

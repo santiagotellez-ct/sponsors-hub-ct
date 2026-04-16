@@ -63,7 +63,10 @@ export default function EvidenceUploadedEmail({
 
           {/* BOTÓN VERDE LIMA */}
           <Section style={buttonContainer}>
-            <Button style={button} href={`${baseUrl}/dashboard/entregables`}>
+            <Button
+              style={button}
+              href={`https://sponsors-hub-ct.vercel.app/dashboard/entregables`}
+            >
               Ver Evidencia
             </Button>
           </Section>
