@@ -127,7 +127,7 @@ export default async function DashboardPage() {
                   <div className="w-full">
                     <h1 className="text-2xl font-bold mb-6">
                       Hola {sponsor.contactInfo?.fullName?.split(' ')[0] || 'Sponsor'},{' '}
-                      {sponsor.companyName}, {'👋'}
+                      {sponsor.companyName} 👋
                     </h1>
 
                     {/* REDISEÑO: GRID DE 4 TARJETAS SUPERIORES */}
