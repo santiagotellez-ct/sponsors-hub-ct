@@ -125,6 +125,7 @@ export default async function DashboardPage() {
                   </div>
                 ) : (
                   <div className="w-full">
+                    {/* SALUDO CORREGIDO (Sin comas extra) */}
                     <h1 className="text-2xl font-bold mb-6">
                       Hola {sponsor.contactInfo?.fullName?.split(' ')[0] || 'Sponsor'},{' '}
                       {sponsor.companyName} 👋
@@ -139,7 +140,8 @@ export default async function DashboardPage() {
                             <p className="text-sm font-medium text-muted-foreground">
                               Evento Asignado
                             </p>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-xs font-medium text-foreground border">
+                            {/* COLOR SOBRIO: Azul acero */}
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-500/10 text-xs font-medium text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/20">
                               <CalendarDaysIcon className="w-3 h-3" /> Foco
                             </span>
                           </div>
@@ -165,7 +167,8 @@ export default async function DashboardPage() {
                         <div>
                           <div className="flex justify-between items-start mb-2">
                             <p className="text-sm font-medium text-muted-foreground">Plan Activo</p>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-xs font-medium text-foreground border">
+                            {/* COLOR SOBRIO: Ámbar suave */}
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50/80 dark:bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
                               <StarIcon className="w-3 h-3" /> Nivel
                             </span>
                           </div>
@@ -192,7 +195,8 @@ export default async function DashboardPage() {
                             <p className="text-sm font-medium text-muted-foreground">
                               Ejecución del Patrocinio
                             </p>
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-green-50/50 border border-green-200 text-xs font-medium text-green-700">
+                            {/* COLOR SOBRIO: Usando tu verde #A9E63F con transparencia */}
+                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#A9E63F]/10 border border-[#A9E63F]/30 text-xs font-medium text-[#7aab2a] dark:text-[#A9E63F]">
                               <CheckCircle2Icon className="w-3 h-3" /> {completedItems}/{totalItems}
                             </span>
                           </div>
@@ -200,14 +204,18 @@ export default async function DashboardPage() {
                             {executionPercentage}%
                           </h3>
 
-                          {/* BARRA SEGMENTADA */}
+                          {/* BARRA SEGMENTADA CON COLOR PERSONALIZADO */}
                           <div className="flex gap-[2px] h-5 w-full mt-2">
                             {Array.from({ length: 24 }).map((_, i) => {
                               const isActive = i < Math.round((executionPercentage / 100) * 24)
                               return (
                                 <div
                                   key={i}
-                                  className={`flex-1 rounded-[1px] ${isActive ? 'bg-foreground' : 'bg-muted-foreground/20'}`}
+                                  className={`flex-1 rounded-[1px] transition-colors ${
+                                    isActive
+                                      ? 'bg-[#A9E63F] shadow-[0_0_4px_rgba(169,230,63,0.3)]'
+                                      : 'bg-muted-foreground/15 dark:bg-muted-foreground/20'
+                                  }`}
                                 />
                               )
                             })}
@@ -222,20 +230,21 @@ export default async function DashboardPage() {
 
                       {/* TARJETA 4: Próxima Reunión (Clickeable) */}
                       <Link href="/dashboard/reuniones" className="group block h-full">
-                        <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px] transition-all group-hover:border-primary/40 group-hover:shadow-md relative overflow-hidden">
+                        <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px] transition-all hover:border-indigo-500/40 hover:shadow-md relative overflow-hidden">
                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <ArrowUpRightIcon className="w-5 h-5 text-primary" />
+                            <ArrowUpRightIcon className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
                           </div>
                           <div>
                             <div className="flex justify-between items-start mb-2">
                               <p className="text-sm font-medium text-muted-foreground">
                                 Próxima Reunión
                               </p>
-                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-muted text-xs font-medium text-foreground border group-hover:bg-primary/10 group-hover:text-primary group-hover:border-primary/20 transition-colors">
+                              {/* COLOR SOBRIO: Índigo tenue */}
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-50/80 dark:bg-indigo-500/10 text-xs font-medium text-indigo-700 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-500/20 transition-colors">
                                 <PlayIcon className="w-3 h-3" /> Sig.
                               </span>
                             </div>
-                            <h3 className="text-2xl font-bold truncate tracking-tight mb-2 group-hover:text-primary transition-colors">
+                            <h3 className="text-2xl font-bold truncate tracking-tight mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                               {nextMeeting ? nextMeeting.name : 'Al día'}
                             </h3>
                           </div>
@@ -260,9 +269,9 @@ export default async function DashboardPage() {
 
                     {/* BLOQUE INFERIOR: DETALLE PRÓXIMA REUNIÓN (Clickeable) */}
                     <Link href="/dashboard/reuniones" className="block group">
-                      <div className="min-h-[25vh] rounded-xl bg-card border shadow-sm flex flex-col p-8 transition-all group-hover:border-primary/30 group-hover:shadow-md relative overflow-hidden">
+                      <div className="min-h-[25vh] rounded-xl bg-card border shadow-sm flex flex-col p-8 transition-all hover:border-indigo-500/30 hover:shadow-md relative overflow-hidden">
                         <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity transform group-hover:translate-x-1 group-hover:-translate-y-1 duration-300">
-                          <ArrowUpRightIcon className="w-6 h-6 text-primary" />
+                          <ArrowUpRightIcon className="w-6 h-6 text-indigo-500 dark:text-indigo-400" />
                         </div>
 
                         <h2 className="text-lg font-bold border-b pb-4 mb-6">
@@ -272,7 +281,7 @@ export default async function DashboardPage() {
                         {nextMeeting ? (
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-muted/20 group-hover:bg-muted/40 transition-colors rounded-lg border border-transparent group-hover:border-border">
                             <div>
-                              <h3 className="text-xl font-semibold group-hover:text-primary transition-colors">
+                              <h3 className="text-xl font-semibold group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                 {nextMeeting.name}
                               </h3>
                               <p className="text-muted-foreground mt-1">
@@ -282,7 +291,7 @@ export default async function DashboardPage() {
                               </p>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-900 text-white shadow-sm">
+                              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 shadow-sm">
                                 {nextMeeting.scheduledDate ? 'Agendada' : 'Requiere Agendar'}
                               </span>
                             </div>
