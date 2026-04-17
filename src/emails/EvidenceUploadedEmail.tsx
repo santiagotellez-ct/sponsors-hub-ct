@@ -73,7 +73,7 @@ export default function EvidenceUploadedEmail({
 
           {/* FOOTER */}
           <Section style={footer}>
-            <Text style={footerText}>Este es un mensaje automático del sistema Sponsors Hub.</Text>
+            <Text style={footerText}>Este es un mensaje automático del sistema Sponsor Hub.</Text>
             <Text style={footerText}>© {new Date().getFullYear()} Colombia Tech.</Text>
           </Section>
         </Container>

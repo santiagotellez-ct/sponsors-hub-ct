@@ -1,9 +1,85 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, CollectionBeforeChangeHook } from 'payload'
 import { Resend } from 'resend'
 import WelcomeEmail from '../emails/WelcomeEmail'
 import EvidenceUploadedEmail from '../emails/EvidenceUploadedEmail'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+/* ==========================================
+   HOOK: ADUANA INVISIBLE PARA NOTION
+   Intercepta links temporales, los descarga 
+   y los vuelve Media física.
+   ========================================== */
+const processNotionEvidences: CollectionBeforeChangeHook = async ({ data, req, operation }) => {
+  if (operation === 'update' || operation === 'create') {
+    const { payload } = req
+
+    if (!data.eventParticipations) return data
+
+    // Recorremos el laberinto de participaciones -> beneficios -> evidencias
+    for (const participation of data.eventParticipations) {
+      if (!participation.benefitItems) continue
+
+      for (const item of participation.benefitItems) {
+        if (!item.evidences) continue
+
+        for (const evidence of item.evidences) {
+          // 1. Detectar si es un enlace temporal de AWS/Notion
+          if (
+            evidence.type === 'link' &&
+            evidence.link &&
+            (evidence.link.includes('amazonaws.com') || evidence.link.includes('prod-files-secure'))
+          ) {
+            try {
+              // 2. Descargar el archivo silenciosamente desde el backend de Payload
+              const response = await fetch(evidence.link)
+              if (!response.ok) continue
+
+              const arrayBuffer = await response.arrayBuffer()
+              const buffer = Buffer.from(arrayBuffer)
+              const mimeType = response.headers.get('content-type') || 'application/octet-stream'
+
+              // 3. Clasificar inteligentemente (Imagen vs Documento)
+              const isImage = mimeType.startsWith('image/')
+              let ext = mimeType.split('/')[1] || 'bin'
+              if (ext === 'jpeg') ext = 'jpg'
+              if (ext.includes('svg')) ext = 'svg'
+
+              const newType = isImage ? 'image' : 'document'
+              const cleanName = (item.itemName || 'evidencia')
+                .replace(/[^\w.-]/g, '_')
+                .substring(0, 30)
+              const filename = `evid_${cleanName}_${Date.now()}.${ext}`
+
+              // 4. Inyectar en la colección 'media' usando la API local de Payload
+              const mediaDoc = await payload.create({
+                collection: 'media',
+                data: {
+                  alt: `Evidencia: ${item.itemName}`,
+                },
+                file: {
+                  data: buffer,
+                  mimetype: mimeType,
+                  name: filename,
+                  size: buffer.byteLength,
+                },
+              })
+
+              // 5. Actualizamos el tipo y el ID, pero CONSERVAMOS el link para que n8n no lo duplique
+              evidence.type = newType
+              evidence.file = mediaDoc.id
+              // evidence.link se mantiene intacto
+            } catch (error) {
+              console.error('Error procesando evidencia de Notion en Hook:', error)
+              // Si falla, falla en silencio y deja el link como estaba para no romper nada
+            }
+          }
+        }
+      }
+    }
+  }
+  return data
+}
 
 export const Sponsors: CollectionConfig = {
   slug: 'sponsors',
@@ -401,7 +477,6 @@ export const Sponsors: CollectionConfig = {
             }
           }
 
-          // === NUEVO CÓDIGO A AGREGAR AQUÍ ABAJO ===
           const webhookReunionesUrl = process.env.N8N_WEBHOOK_REUNIONES_URL
           if (webhookReunionesUrl) {
             try {
@@ -415,7 +490,7 @@ export const Sponsors: CollectionConfig = {
               console.log('Error enviando webhook de reuniones a n8n', error)
             }
           }
-          // === FIN DEL NUEVO CÓDIGO ===
+
           // 4. WEBHOOK HACIA N8N (Google Drive - Subida de Logos)
           if (operation === 'update' && previousDoc) {
             try {
@@ -497,6 +572,7 @@ export const Sponsors: CollectionConfig = {
     ],
     // 2. EL HOOK BEFORE: Aquí procesamos la lógica y atrapamos la contraseña
     beforeChange: [
+      processNotionEvidences, // <-- AQUÍ SE CONECTA EL HOOK DE DESCARGA DE NOTION
       async ({ data, req, operation }) => {
         // ---> NUEVO: Atrapamos la contraseña cruda antes de que se encripte
         if (operation === 'create' && data.password) {
