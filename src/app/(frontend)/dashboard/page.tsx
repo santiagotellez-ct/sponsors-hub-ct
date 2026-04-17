@@ -23,7 +23,7 @@ import {
 } from 'lucide-react'
 
 export const iframeHeight = '800px'
-export const description = 'Sponsors Hub Dashboard'
+export const description = 'Sponsor Hub Dashboard'
 
 export default async function DashboardPage() {
   const payload = await getPayload({ config: configPromise })
