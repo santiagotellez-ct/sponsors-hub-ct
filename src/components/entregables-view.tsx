@@ -93,11 +93,10 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
       currentPart.plan =
         typeof currentPart.plan === 'object' ? currentPart.plan.id : currentPart.plan
 
+      // === AQUÍ ESTÁ LA CORRECCIÓN ===
       currentPart.deliverables = currentPart.deliverables.map((d: any) => {
-        if (
-          d.id === deliverableId ||
-          (d.benefitCategory === categoryName && d.type === type && d.status === 'pending')
-        ) {
+        // Validación estricta solo por ID
+        if (d.id === deliverableId) {
           return {
             ...d,
             status: 'completed',
