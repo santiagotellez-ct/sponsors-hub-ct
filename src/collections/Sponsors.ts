@@ -274,7 +274,7 @@ export const Sponsors: CollectionConfig = {
               await resend.emails.send({
                 from: 'Colombia Tech <hola@prueba.tllz.cloud>',
                 to: contactEmail,
-                subject: 'Tus credenciales de acceso | Sponsors Hub',
+                subject: 'Tus credenciales de acceso | Sponsor Hub',
                 react: WelcomeEmail({
                   companyName: doc.companyName,
                   email: contactEmail,
@@ -332,7 +332,7 @@ export const Sponsors: CollectionConfig = {
               await resend.emails.send({
                 from: 'Colombia Tech <hola@prueba.tllz.cloud>',
                 to: contactEmail,
-                subject: 'Nueva evidencia en tu patrocinio | Sponsors Hub',
+                subject: 'Nueva evidencia en tu patrocinio | Sponsor Hub',
                 react: EvidenceUploadedEmail({
                   companyName: doc.companyName,
                   itemName: newEvidenceFound.itemName,
