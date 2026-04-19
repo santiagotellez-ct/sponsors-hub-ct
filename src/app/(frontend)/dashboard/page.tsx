@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     depth: 2,
   })
 
-  // 1. LÓGICA DE VALIDACIÓN DE ONBOARDING
+  // 1. LÓGICA DE VALIDACIÓN DE ONBOARDING hola hola gola
   const hasLogo = !!sponsor.logo
   const hasContactInfo =
     sponsor.contactInfo?.fullName && sponsor.contactInfo?.whatsapp && sponsor.contactInfo?.linkedin
@@ -175,7 +175,9 @@ export default async function DashboardPage() {
                           </div>
                           <div>
                             <div className="flex justify-between items-start mb-2">
-                              <p className="text-sm font-medium text-muted-foreground">Plan Activo</p>
+                              <p className="text-sm font-medium text-muted-foreground">
+                                Plan Activo
+                              </p>
                               {/* COLOR SOBRIO: Ámbar suave */}
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50/80 dark:bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20 transition-colors">
                                 <StarIcon className="w-3 h-3" /> Nivel
@@ -211,7 +213,8 @@ export default async function DashboardPage() {
                               </p>
                               {/* COLOR SOBRIO: Usando tu verde #A9E63F con transparencia */}
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#A9E63F]/10 border border-[#A9E63F]/30 text-xs font-medium text-[#7aab2a] dark:text-[#A9E63F] group-hover:bg-[#A9E63F]/20 transition-colors">
-                                <CheckCircle2Icon className="w-3 h-3" /> {completedItems}/{totalItems}
+                                <CheckCircle2Icon className="w-3 h-3" /> {completedItems}/
+                                {totalItems}
                               </span>
                             </div>
                             <h3 className="text-3xl font-light tracking-tighter mb-1 group-hover:text-[#8ac72e] dark:group-hover:text-[#A9E63F] transition-colors">
