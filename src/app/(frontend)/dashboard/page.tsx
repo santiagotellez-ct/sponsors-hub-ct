@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     depth: 2,
   })
 
-  // 1. LÓGICA DE VALIDACIÓN DE ONBOARDING hola hola gola
+  // 1. LÓGICA DE VALIDACIÓN DE ONBOARDING
   const hasLogo = !!sponsor.logo
   const hasContactInfo =
     sponsor.contactInfo?.fullName && sponsor.contactInfo?.whatsapp && sponsor.contactInfo?.linkedin
