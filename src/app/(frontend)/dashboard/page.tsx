@@ -134,99 +134,114 @@ export default async function DashboardPage() {
                     {/* REDISEÑO: GRID DE 4 TARJETAS SUPERIORES */}
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4 mb-8">
                       {/* TARJETA 1: Evento */}
-                      <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px]">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-medium text-muted-foreground">
-                              Evento Asignado
-                            </p>
-                            {/* COLOR SOBRIO: Azul acero */}
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-500/10 text-xs font-medium text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/20">
-                              <CalendarDaysIcon className="w-3 h-3" /> Foco
-                            </span>
+                      <Link href="/dashboard/planes" className="group block h-full">
+                        <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px] transition-all hover:border-blue-500/40 hover:shadow-md relative overflow-hidden">
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRightIcon className="w-5 h-5 text-blue-500 dark:text-blue-400" />
                           </div>
-                          <h3
-                            className="text-2xl font-bold truncate tracking-tight mb-2"
-                            title={(eventDoc as any)?.title}
-                          >
-                            {(eventDoc as any)?.title ? (eventDoc as any).title : 'Sin Evento'}
-                          </h3>
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="text-sm font-medium text-muted-foreground">
+                                Evento Asignado
+                              </p>
+                              {/* COLOR SOBRIO: Azul acero */}
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-50/80 dark:bg-blue-500/10 text-xs font-medium text-blue-700 dark:text-blue-400 border border-blue-200/60 dark:border-blue-500/20 group-hover:bg-blue-100 dark:group-hover:bg-blue-500/20 transition-colors">
+                                <CalendarDaysIcon className="w-3 h-3" /> Foco
+                              </span>
+                            </div>
+                            <h3
+                              className="text-2xl font-bold truncate tracking-tight mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                              title={(eventDoc as any)?.title}
+                            >
+                              {(eventDoc as any)?.title ? (eventDoc as any).title : 'Sin Evento'}
+                            </h3>
+                          </div>
+                          <div className="mt-auto pt-4">
+                            <p className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+                              <HourglassIcon className="w-4 h-4" /> {countdownText}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Para el evento activo
+                            </p>
+                          </div>
                         </div>
-                        <div className="mt-auto pt-4">
-                          <p className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
-                            <HourglassIcon className="w-4 h-4" /> {countdownText}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Para el evento activo
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
 
                       {/* TARJETA 2: Plan */}
-                      <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px]">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-medium text-muted-foreground">Plan Activo</p>
-                            {/* COLOR SOBRIO: Ámbar suave */}
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50/80 dark:bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20">
-                              <StarIcon className="w-3 h-3" /> Nivel
-                            </span>
+                      <Link href="/dashboard/planes" className="group block h-full">
+                        <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px] transition-all hover:border-amber-500/40 hover:shadow-md relative overflow-hidden">
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRightIcon className="w-5 h-5 text-amber-500 dark:text-amber-400" />
                           </div>
-                          <h3 className="text-2xl font-bold truncate tracking-tight uppercase mb-2">
-                            {sponsor.currentPlanName !== 'Ninguno actual'
-                              ? sponsor.currentPlanName
-                              : 'Sin Plan'}
-                          </h3>
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="text-sm font-medium text-muted-foreground">Plan Activo</p>
+                              {/* COLOR SOBRIO: Ámbar suave */}
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-50/80 dark:bg-amber-500/10 text-xs font-medium text-amber-700 dark:text-amber-400 border border-amber-200/60 dark:border-amber-500/20 group-hover:bg-amber-100 dark:group-hover:bg-amber-500/20 transition-colors">
+                                <StarIcon className="w-3 h-3" /> Nivel
+                              </span>
+                            </div>
+                            <h3 className="text-2xl font-bold truncate tracking-tight uppercase mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                              {sponsor.currentPlanName !== 'Ninguno actual'
+                                ? sponsor.currentPlanName
+                                : 'Sin Plan'}
+                            </h3>
+                          </div>
+                          <div className="mt-auto pt-4">
+                            <p className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+                              <ListTodoIcon className="w-4 h-4" /> Beneficios asignados
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Gestión por administrador
+                            </p>
+                          </div>
                         </div>
-                        <div className="mt-auto pt-4">
-                          <p className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
-                            <ListTodoIcon className="w-4 h-4" /> Beneficios asignados
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Gestión por administrador
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
 
                       {/* TARJETA 3: Ejecución (Barra Segmentada) */}
-                      <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px]">
-                        <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <p className="text-sm font-medium text-muted-foreground">
-                              Ejecución del Patrocinio
-                            </p>
-                            {/* COLOR SOBRIO: Usando tu verde #A9E63F con transparencia */}
-                            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#A9E63F]/10 border border-[#A9E63F]/30 text-xs font-medium text-[#7aab2a] dark:text-[#A9E63F]">
-                              <CheckCircle2Icon className="w-3 h-3" /> {completedItems}/{totalItems}
-                            </span>
+                      <Link href="/dashboard/entregables" className="group block h-full">
+                        <div className="rounded-xl bg-card p-6 border shadow-sm flex flex-col justify-between h-full min-h-[180px] transition-all hover:border-[#A9E63F]/40 hover:shadow-md relative overflow-hidden">
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <ArrowUpRightIcon className="w-5 h-5 text-[#8ac72e] dark:text-[#A9E63F]" />
                           </div>
-                          <h3 className="text-3xl font-light tracking-tighter mb-1">
-                            {executionPercentage}%
-                          </h3>
+                          <div>
+                            <div className="flex justify-between items-start mb-2">
+                              <p className="text-sm font-medium text-muted-foreground">
+                                Ejecución del Patrocinio
+                              </p>
+                              {/* COLOR SOBRIO: Usando tu verde #A9E63F con transparencia */}
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#A9E63F]/10 border border-[#A9E63F]/30 text-xs font-medium text-[#7aab2a] dark:text-[#A9E63F] group-hover:bg-[#A9E63F]/20 transition-colors">
+                                <CheckCircle2Icon className="w-3 h-3" /> {completedItems}/{totalItems}
+                              </span>
+                            </div>
+                            <h3 className="text-3xl font-light tracking-tighter mb-1 group-hover:text-[#8ac72e] dark:group-hover:text-[#A9E63F] transition-colors">
+                              {executionPercentage}%
+                            </h3>
 
-                          {/* BARRA SEGMENTADA CON COLOR PERSONALIZADO */}
-                          <div className="flex gap-[2px] h-5 w-full mt-2">
-                            {Array.from({ length: 24 }).map((_, i) => {
-                              const isActive = i < Math.round((executionPercentage / 100) * 24)
-                              return (
-                                <div
-                                  key={i}
-                                  className={`flex-1 rounded-[1px] transition-colors ${
-                                    isActive
-                                      ? 'bg-[#A9E63F] shadow-[0_0_4px_rgba(169,230,63,0.3)]'
-                                      : 'bg-muted-foreground/15 dark:bg-muted-foreground/20'
-                                  }`}
-                                />
-                              )
-                            })}
+                            {/* BARRA SEGMENTADA CON COLOR PERSONALIZADO */}
+                            <div className="flex gap-[2px] h-5 w-full mt-2">
+                              {Array.from({ length: 24 }).map((_, i) => {
+                                const isActive = i < Math.round((executionPercentage / 100) * 24)
+                                return (
+                                  <div
+                                    key={i}
+                                    className={`flex-1 rounded-[1px] transition-colors ${
+                                      isActive
+                                        ? 'bg-[#A9E63F] shadow-[0_0_4px_rgba(169,230,63,0.3)]'
+                                        : 'bg-muted-foreground/15 dark:bg-muted-foreground/20'
+                                    }`}
+                                  />
+                                )
+                              })}
+                            </div>
+                          </div>
+                          <div className="mt-auto pt-4">
+                            <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+                              <TargetIcon className="w-3 h-3" /> En base a estatus global
+                            </p>
                           </div>
                         </div>
-                        <div className="mt-auto pt-4">
-                          <p className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
-                            <TargetIcon className="w-3 h-3" /> En base a estatus global
-                          </p>
-                        </div>
-                      </div>
+                      </Link>
 
                       {/* TARJETA 4: Próxima Reunión (Clickeable) */}
                       <Link href="/dashboard/reuniones" className="group block h-full">

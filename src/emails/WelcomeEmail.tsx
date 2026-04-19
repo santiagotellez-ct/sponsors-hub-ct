@@ -22,7 +22,7 @@ export default function WelcomeEmail({
   companyName = 'Sponsor',
   email = 'correo@empresa.com',
   passwordTemp = '********',
-  baseUrl = 'https://tu-dominio.com', // Cámbialo cuando subas a producción
+  baseUrl = 'https://sponsor.colombiatechweek.co', // Cámbialo cuando subas a producción
 }: WelcomeEmailProps) {
   return (
     <Html>
@@ -64,7 +64,7 @@ export default function WelcomeEmail({
 
           {/* BOTÓN VERDE LIMA */}
           <Section style={buttonContainer}>
-            <Button style={button} href={`https://sponsors-hub-ct.vercel.app/login`}>
+            <Button style={button} href={`https://sponsor.colombiatechweek.co/login`}>
               Ingresar al Dashboard
             </Button>
           </Section>

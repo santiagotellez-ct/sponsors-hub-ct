@@ -22,7 +22,7 @@ export default function EvidenceUploadedEmail({
   companyName = 'Sponsor',
   itemName = 'Publicación en Redes Sociales',
   benefitCategory = 'Marketing',
-  baseUrl = 'https://tu-dominio.com', // Cámbialo cuando subas a producción
+  baseUrl = 'https://sponsor.colombiatechweek.co', // Cámbialo cuando subas a producción
 }: EvidenceUploadedEmailProps) {
   return (
     <Html>
@@ -65,7 +65,7 @@ export default function EvidenceUploadedEmail({
           <Section style={buttonContainer}>
             <Button
               style={button}
-              href={`https://sponsors-hub-ct.vercel.app/dashboard/entregables`}
+              href={`https://sponsor.colombiatechweek.co/dashboard/entregables`}
             >
               Ver Evidencia
             </Button>
