@@ -48,7 +48,7 @@ export function DocumentosView({ sponsor }: { sponsor: any }) {
                 <Button
                   asChild
                   variant="outline"
-                  className="w-full group-hover:bg-zinc-900 group-hover:text-white transition-colors"
+                  className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
                 >
                   <a href={fileUrl} target="_blank" rel="noopener noreferrer" download>
                     <DownloadIcon className="w-4 h-4 mr-2" />

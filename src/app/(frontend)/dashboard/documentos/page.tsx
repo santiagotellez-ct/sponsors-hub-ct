@@ -34,7 +34,7 @@ export default async function DocumentosPage() {
     <TooltipProvider>
       <div className="[--header-height:calc(--spacing(14))]">
         <SidebarProvider className="flex flex-col">
-          <SiteHeader />
+          <SiteHeader sponsor={sponsor} />
           <div className="flex flex-1">
             <AppSidebar sponsor={sponsor} />
             <SidebarInset>

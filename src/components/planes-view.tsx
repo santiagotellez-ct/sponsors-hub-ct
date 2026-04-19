@@ -1,12 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ArrowRightIcon, ArrowLeftIcon, CheckCircle2Icon, PackageIcon } from 'lucide-react'
+import { ArrowRightIcon, ArrowLeftIcon, CheckCircle2Icon, PackageIcon, CalendarIcon } from 'lucide-react'
 
 export function PlanesView({ sponsor }: { sponsor: any }) {
-  // Estado para controlar si vemos la cuadrícula o el detalle de un plan
   const [selectedParticipation, setSelectedParticipation] = useState<any | null>(null)
 
   const participations = sponsor.eventParticipations || []
@@ -28,54 +26,122 @@ export function PlanesView({ sponsor }: { sponsor: any }) {
     const event = selectedParticipation.event
     const plan = selectedParticipation.plan
     const benefits = plan?.benefits || []
+    const bgImageUrl = event?.backgroundImage?.url
+    const isActive = selectedParticipation.isCurrent
+
+    const startDate = event?.startDate ? new Date(event.startDate) : null
+    const endDate = event?.endDate ? new Date(event.endDate) : null
+    const benefitCount = benefits.length
+
+    const dateText = startDate
+      ? `${startDate.getDate()}${endDate && endDate.getTime() !== startDate.getTime() ? ` \u2014 ${endDate.getDate()}` : ''} ${startDate.toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + startDate.toLocaleDateString('es-ES', { month: 'long' }).slice(1)}, ${startDate.getFullYear()}`
+      : 'Por confirmar'
 
     return (
-      <div className="space-y-8 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div>
-          <Button
-            variant="ghost"
-            className="mb-4 -ml-4 text-muted-foreground hover:text-foreground"
-            onClick={() => setSelectedParticipation(null)}
-          >
-            <ArrowLeftIcon className="w-4 h-4 mr-2" />
-            Volver a Mis Planes
-          </Button>
+      <div className="space-y-7 pb-10 animate-in fade-in slide-in-from-bottom-4 duration-300">
+        {/* VOLVER */}
+        <Button
+          variant="ghost"
+          className="-ml-3 text-muted-foreground hover:text-foreground text-[13px]"
+          onClick={() => setSelectedParticipation(null)}
+        >
+          <ArrowLeftIcon className="w-4 h-4 mr-1.5" />
+          Volver a mis planes
+        </Button>
 
-          <h1 className="text-3xl font-bold tracking-tight">Plan {plan?.name || 'Asignado'}</h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Evento: {event?.title || 'Evento Desconocido'}
-          </p>
+        {/* BANNER SUPERIOR */}
+        <div className="relative h-[200px] rounded-2xl overflow-hidden border border-border/40 shadow-sm">
+          {/* Imagen de fondo con blur */}
+          {bgImageUrl ? (
+            <div
+              className="absolute inset-0 bg-cover bg-center scale-110"
+              style={{ backgroundImage: `url(${bgImageUrl})`, filter: 'blur(6px)' }}
+            />
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#1a2540] to-[#0f172a]" />
+          )}
+          {/* Overlay oscuro */}
+          <div className="absolute inset-0 bg-black/50" />
+
+          {/* Badge evento activo */}
+          {isActive && (
+            <div className="absolute top-4 right-4 z-10">
+              <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-md border border-white/20 text-white text-[11.5px] font-semibold px-3 py-1.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                Evento activo
+              </span>
+            </div>
+          )}
+
+          {/* Texto sobre el banner */}
+          <div className="absolute bottom-0 left-0 px-7 pb-6 z-10">
+            <p className="text-[10.5px] font-bold tracking-[0.16em] text-white/70 uppercase mb-1.5">
+              Plan {plan?.name || '\u2014'}
+            </p>
+            <h1 className="text-[28px] font-bold text-white tracking-tight leading-tight drop-shadow">
+              {event?.title || 'Evento'}
+            </h1>
+          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          {benefits.length > 0 ? (
-            benefits.map((benefit: any, index: number) => (
-              <Card key={index} className="shadow-sm border-l-4 border-l-zinc-900">
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-4">{benefit.benefitName}</h3>
+        {/* TARJETAS DE INFO */}
+        <div className="grid grid-cols-2 gap-4">
+          <div className="border border-border/60 rounded-xl px-5 py-4 bg-white shadow-xs">
+            <div className="flex items-center gap-2 text-[11.5px] text-muted-foreground font-medium mb-2">
+              <CalendarIcon className="w-3.5 h-3.5 opacity-70" />
+              Fechas
+            </div>
+            <p className="text-[16px] font-bold text-zinc-900">{dateText}</p>
+          </div>
+          <div className="border border-border/60 rounded-xl px-5 py-4 bg-white shadow-xs">
+            <div className="flex items-center gap-2 text-[11.5px] text-muted-foreground font-medium mb-2">
+              <PackageIcon className="w-3.5 h-3.5 opacity-70" />
+              Beneficios
+            </div>
+            <p className="text-[16px] font-bold text-zinc-900">
+              {benefitCount} categor{benefitCount === 1 ? 'ía' : 'ías'}
+            </p>
+          </div>
+        </div>
 
-                  {benefit.items && benefit.items.length > 0 ? (
-                    <ul className="space-y-3">
-                      {benefit.items.map((item: any, iIndex: number) => (
-                        <li key={iIndex} className="flex items-start gap-3 text-muted-foreground">
-                          <CheckCircle2Icon className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                          <span className="font-medium text-foreground/80">{item.itemName}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground italic">
-                      Este beneficio no tiene ítems detallados.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-            ))
+        {/* BENEFICIOS INCLUIDOS */}
+        <div>
+          <h2 className="text-[17px] font-bold text-zinc-900 mb-4">Beneficios incluidos</h2>
+
+          {benefits.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {benefits.map((benefit: any, index: number) => {
+                const items = benefit.items || []
+                return (
+                  <div
+                    key={index}
+                    className="border border-border/60 rounded-xl px-5 py-4 bg-white shadow-xs"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-[14.5px] font-bold text-zinc-900">{benefit.benefitName}</h3>
+                      <span className="text-[12px] text-muted-foreground font-medium">
+                        {items.length}/{items.length}
+                      </span>
+                    </div>
+                    {items.length > 0 ? (
+                      <ul className="space-y-2">
+                        {items.map((item: any, iIndex: number) => (
+                          <li key={iIndex} className="flex items-start gap-2.5 text-[13px] text-teal-600">
+                            <CheckCircle2Icon className="w-[15px] h-[15px] shrink-0 mt-0.5 opacity-80" />
+                            <span>{item.itemName}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic">Sin ítems configurados.</p>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           ) : (
-            <div className="col-span-full p-8 border rounded-xl bg-muted/20 text-center">
-              <p className="text-muted-foreground">
-                Este plan no tiene beneficios detallados configurados.
-              </p>
+            <div className="p-8 border rounded-xl bg-muted/20 text-center">
+              <p className="text-muted-foreground">Este plan no tiene beneficios configurados.</p>
             </div>
           )}
         </div>
@@ -87,57 +153,86 @@ export function PlanesView({ sponsor }: { sponsor: any }) {
   return (
     <div className="space-y-8 pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mis Planes</h1>
-        <p className="text-muted-foreground mt-2">
-          Seleccione un evento para ver los beneficios detallados de su plan de patrocinio.
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Mis planes</h1>
+        <p className="text-muted-foreground mt-2 text-[15px]">
+          Selecciona un evento para ver los beneficios detallados de tu plan de patrocinio.
         </p>
       </div>
 
-      {/* GRID DE 3 COLUMNAS MÁXIMO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mt-6">
         {participations.map((participation: any, index: number) => {
           const event = participation.event
+          const plan = participation.plan
           const bgImageUrl = event?.backgroundImage?.url
+          const isActive = participation.isCurrent
+
+          const startDate = event?.startDate ? new Date(event.startDate) : null
+          const endDate = event?.endDate ? new Date(event.endDate) : null
+          const benefitCount = plan?.benefits?.length || 0
+
+          const dateText = startDate
+            ? `${startDate.getDate()}${endDate && endDate.getTime() !== startDate.getTime() ? ` — ${endDate.getDate()}` : ''} ${startDate.toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + startDate.toLocaleDateString('es-ES', { month: 'long' }).slice(1)}, ${startDate.getFullYear()}`
+            : null
 
           return (
-            <button
+            <div
               key={index}
+              className="group flex flex-col rounded-2xl overflow-hidden border border-border/60 shadow-sm hover:shadow-md transition-all duration-300 bg-white cursor-pointer hover:-translate-y-0.5"
               onClick={() => setSelectedParticipation(participation)}
-              className="group relative flex flex-col text-left w-full h-[300px] rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-zinc-900 focus:ring-offset-2"
             >
-              {/* IMAGEN DE FONDO */}
-              {bgImageUrl ? (
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
-                  style={{ backgroundImage: `url(${bgImageUrl})` }}
-                />
-              ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-zinc-800 to-zinc-950 transition-transform duration-700 group-hover:scale-105" />
-              )}
-
-              {/* OVERLAY OSCURO PARA LEGIBILIDAD */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-black/20" />
-
-              {/* CONTENIDO SUPERIOR: EVENTO */}
-              <div className="relative z-10 p-6 flex-1">
-                {participation.isCurrent && (
-                  <span className="inline-block px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full mb-3 shadow-sm">
-                    EVENTO ACTUAL
-                  </span>
+              {/* BANNER SUPERIOR — imagen del evento o gradiente fallback */}
+              <div className="relative h-[160px] overflow-hidden">
+                {bgImageUrl ? (
+                  <div
+                    className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+                    style={{ backgroundImage: `url(${bgImageUrl})` }}
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-zinc-700 to-zinc-950 transition-transform duration-700 group-hover:scale-105" />
                 )}
-                <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-md">
-                  {event?.title || 'Evento'}
-                </h2>
-              </div>
 
-              {/* CONTENIDO INFERIOR: BOTÓN MI PLAN */}
-              <div className="relative z-10 p-6 w-full mt-auto">
-                <div className="flex items-center justify-between text-white/90 group-hover:text-white border-t border-white/20 pt-4">
-                  <span className="font-semibold tracking-wide uppercase text-sm">Mi plan</span>
-                  <ArrowRightIcon className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                {/* Badge activo */}
+                {isActive && (
+                  <div className="absolute top-3.5 left-3.5 z-10">
+                    <span className="inline-flex items-center gap-1.5 bg-white/95 backdrop-blur-sm text-zinc-800 text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      Activo
+                    </span>
+                  </div>
+                )}
+
+                {/* Nombre del plan sobre la imagen */}
+                <div className="absolute bottom-0 left-0 right-0 px-4 pb-3.5 pt-8 bg-gradient-to-t from-black/60 to-transparent">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-white/90 uppercase">
+                    Plan {plan?.name || '—'}
+                  </p>
                 </div>
               </div>
-            </button>
+
+              {/* SECCIÓN INFERIOR — info blanca */}
+              <div className="flex flex-col gap-3 px-4 py-4">
+                <div>
+                  <h2 className="text-[15.5px] font-bold text-zinc-900 leading-snug">
+                    {event?.title || 'Evento'}
+                  </h2>
+                  {dateText && (
+                    <p className="text-[12.5px] text-muted-foreground mt-0.5">{dateText}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                  <span className="text-[12.5px] text-muted-foreground">
+                    {benefitCount} beneficio{benefitCount !== 1 ? 's' : ''}
+                  </span>
+                  <button
+                    className="text-[12.5px] font-semibold text-zinc-900 flex items-center gap-1 hover:gap-2 transition-all"
+                    onClick={() => setSelectedParticipation(participation)}
+                  >
+                    Ver plan <ArrowRightIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
           )
         })}
       </div>

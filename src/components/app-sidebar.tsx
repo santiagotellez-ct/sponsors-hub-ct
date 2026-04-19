@@ -74,7 +74,6 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter>
-        {/* PASAMOS EL SPONSOR COMPLETO AQUÍ */}
         <NavUser user={data.user} sponsor={sponsor} />
       </SidebarFooter>
     </Sidebar>

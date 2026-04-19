@@ -67,8 +67,8 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
               />
             </div>
             <span className="sr-only">Colombia Tech</span>
-            <FieldDescription className="text-base text-center whitespace-nowrap">
-              Ingrese sus credenciales corporativas para acceder
+            <FieldDescription className="text-base text-center text-balance px-2">
+              Ingrese sus credenciales para acceder
             </FieldDescription>
           </div>
 
@@ -118,7 +118,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
           <Field className="mt-2">
             <Button
               type="submit"
-              className="w-full bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -127,7 +127,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
                   Verificando...
                 </>
               ) : (
-                'Acceder al portal'
+                'Acceder'
               )}
             </Button>
           </Field>

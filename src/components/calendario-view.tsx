@@ -1,13 +1,13 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
+import { Card } from '@/components/ui/card'
 import {
   CheckCircle2Icon,
-  ClockIcon,
-  MapIcon,
   VideoIcon,
   CalendarIcon,
-  CalendarDaysIcon,
+  MapPinIcon,
+  CircleDashedIcon,
 } from 'lucide-react'
 
 export function CalendarioView({ sponsor }: { sponsor: any }) {
@@ -22,7 +22,12 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
     )
   }
 
-  const eventDoc = activeParticipation.event
+  const eventDoc = typeof activeParticipation.event === 'object' ? activeParticipation.event : null
+
+  if (!eventDoc) {
+    return <div>Error al cargar info de evento.</div>
+  }
+
   const moments = eventDoc.journey?.moments || []
   const meetings = activeParticipation.meetings || []
 
@@ -35,6 +40,24 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
   }
 
   const nowTime = new Date().getTime()
+
+  // FECHAS DEL EVENTO ASIGNADO
+  const startDate = eventDoc.startDate ? new Date(eventDoc.startDate) : null
+  const endDate = eventDoc.endDate ? new Date(eventDoc.endDate) : null
+
+  let countdownText = 'En curso'
+  let diffDays = 0
+  if (startDate) {
+    const timeDiff = startDate.getTime() - nowTime
+    if (timeDiff > 0) {
+      diffDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+      countdownText = `${diffDays}`
+    } else if (endDate && endDate.getTime() < nowTime) {
+      countdownText = 'Finalizado'
+    }
+  } else {
+    countdownText = 'Por definir'
+  }
 
   // 1. MAPEAMOS LOS MOMENTOS Y CALCULAMOS SUS RANGOS DE FECHAS
   const mappedMoments = moments.map((m: any) => {
@@ -110,17 +133,61 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
     m.mixedItems.sort((a: any, b: any) => a.sortDate - b.sortDate)
   })
 
+  let foundFirstOngoing = false
+
   return (
     <div className="space-y-8 pb-10">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Calendario del Evento</h1>
-        <p className="text-muted-foreground mt-2">
-          Visualice la hoja de ruta general del evento y ubique sus reuniones dentro del journey.
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Calendario del evento</h1>
+        <p className="text-muted-foreground mt-2 text-[15px]">
+          Visualiza la hoja de ruta general y ubica tus reuniones dentro del journey.
         </p>
       </div>
 
-      {/* NUEVO DISEÑO: LÍNEA DE TIEMPO VERTICAL IZQUIERDA */}
-      <div className="ml-2 md:ml-4 border-l-2 border-muted-foreground/20 space-y-12 mt-10">
+      <Card className="shadow-sm border border-border/50 rounded-2xl px-7 py-6 flex flex-col md:flex-row justify-between md:items-center bg-white mt-8 mb-4 gap-6">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground/70 uppercase mb-2">
+            Evento Asignado
+          </p>
+          <h2 className="text-[22px] font-bold text-zinc-900 tracking-tight leading-snug mb-3">
+            {eventDoc.title}
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-5 text-[13px] text-muted-foreground font-normal">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <CalendarIcon className="w-[15px] h-[15px] opacity-60 shrink-0" />
+              {startDate?.getDate() || '--'}{' '}
+              {endDate && endDate.getTime() !== startDate?.getTime() && `— ${endDate.getDate()}`}{' '}
+              {startDate ? startDate.toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + startDate.toLocaleDateString('es-ES', { month: 'long' }).slice(1) : ''},{' '}
+              {startDate?.getFullYear()}
+            </span>
+            {eventDoc.location && (
+              <span className="flex items-center gap-1.5">
+                <MapPinIcon className="w-[15px] h-[15px] opacity-60 shrink-0" />
+                {eventDoc.location.venue || 'Lugar por definir'},{' '}
+                {eventDoc.location.city || 'Ciudad'}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="md:text-right border-t md:border-t-0 pt-5 md:pt-0 shrink-0">
+          <p className="text-[10px] font-semibold tracking-[0.12em] text-muted-foreground/70 uppercase mb-1">
+            Cuenta Regresiva
+          </p>
+          {diffDays > 0 ? (
+            <div className="flex items-baseline gap-1.5 md:justify-end">
+              <span className="text-[52px] font-bold text-zinc-900 leading-none tracking-tight">
+                {diffDays}
+              </span>
+              <span className="text-[14px] font-normal text-muted-foreground pb-1">días</span>
+            </div>
+          ) : (
+            <p className="text-[22px] font-bold text-zinc-900 leading-none mt-1">{countdownText}</p>
+          )}
+        </div>
+      </Card>
+
+      {/* LÍNEA DE TIEMPO VERTICAL IZQUIERDA */}
+      <div className="ml-2 md:ml-4 border-l-[1.5px] border-border/70 space-y-12 mt-10">
         {mappedMoments.map((moment: any, index: number) => {
           const isMomentCompleted =
             moment.mixedItems.length > 0 &&
@@ -134,33 +201,65 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
               return item.status === 'completed'
             })
 
+          let isMomentOngoing = false
+          if (!isMomentCompleted && !foundFirstOngoing) {
+            isMomentOngoing = true
+            foundFirstOngoing = true
+          }
+
+          const monthText =
+            moment.minDate !== 0
+              ? new Date(moment.minDate).getMonth() === new Date(moment.maxDate).getMonth()
+                ? new Date(moment.minDate)
+                    .toLocaleDateString('es-ES', { month: 'long' })
+                    .toUpperCase()
+                : `${new Date(moment.minDate).toLocaleDateString('es-ES', { month: 'long' }).toUpperCase()} — ${new Date(moment.maxDate).toLocaleDateString('es-ES', { month: 'long' }).toUpperCase()}`
+              : 'FECHAS'
+
           return (
-            <div key={index} className="relative pl-8 md:pl-10">
-              {/* NODO DE LA LÍNEA DE TIEMPO (Punto) */}
+            <div key={index} className="relative pl-8 md:pl-12">
+              {/* NODO LÍNEA DE TIEMPO */}
               <div
-                className={`absolute -left-[17px] top-1 flex items-center justify-center w-8 h-8 rounded-full border-4 border-background
-                ${isMomentCompleted ? 'bg-zinc-900 text-white' : 'bg-muted-foreground/20 text-muted-foreground'}
+                className={`absolute -left-[18.5px] top-4 flex items-center justify-center w-9 h-9 rounded-full outline outline-[6px] outline-background shrink-0
+                ${isMomentCompleted ? 'bg-primary border border-primary text-primary-foreground' : isMomentOngoing ? 'bg-transparent border border-muted-foreground/30 text-muted-foreground' : 'bg-transparent border border-border/70 text-muted-foreground/40'}
               `}
               >
                 {isMomentCompleted ? (
                   <CheckCircle2Icon className="w-4 h-4" />
+                ) : isMomentOngoing ? (
+                  <CircleDashedIcon className="w-4 h-4 opacity-70" />
                 ) : (
-                  <MapIcon className="w-4 h-4" />
+                  <div className="w-[6px] h-[6px] rounded-full bg-border" />
                 )}
               </div>
 
               {/* ENCABEZADO DEL MOMENTO */}
-              <div className="mb-6 flex items-center gap-3">
-                <h3 className="text-2xl font-bold">{moment.momentTitle}</h3>
-                {isMomentCompleted && (
-                  <Badge className="bg-zinc-900 text-white h-6">Completado</Badge>
-                )}
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 pt-[0.5px]">
+                <div className="space-y-0.5">
+                  <p className="text-[10.5px] font-bold tracking-widest text-muted-foreground uppercase opacity-80">
+                    FASE {index + 1 < 10 ? `0${index + 1}` : index + 1} · {monthText}
+                  </p>
+                  <h3 className="text-[22px] font-bold text-zinc-900 tracking-tight leading-none pt-1">
+                    {moment.momentTitle}
+                  </h3>
+                </div>
+                <div className="mt-1 sm:mt-4 sm:ml-2">
+                  {isMomentCompleted && (
+                    <span className="inline-flex items-center rounded-md bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground">
+                      Completada
+                    </span>
+                  )}
+                  {!isMomentCompleted && isMomentOngoing && (
+                    <span className="inline-flex items-center rounded-md bg-white border border-border/80 px-3 py-1 text-[11px] font-medium text-zinc-600 shadow-sm">
+                      En curso
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* LISTA LIMPIA DE ÍTEMS Y REUNIONES */}
-              <div className="space-y-4">
+              {/* LISTA DE ÍTEMS Y REUNIONES */}
+              <div className="space-y-3">
                 {moment.mixedItems.map((item: any, iIndex: number) => {
-                  // RENDERIZADO ÍTEM DE EVENTO
                   if (item.type === 'journey_item') {
                     const date1 = new Date(item.date1)
                     const isItemPast = item.date2
@@ -170,35 +269,31 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
                     return (
                       <div
                         key={iIndex}
-                        className={`p-4 rounded-lg border transition-colors ${isItemPast ? 'bg-muted/30 opacity-70' : 'bg-card shadow-sm'}`}
+                        className="py-3 px-4 bg-white border border-border/60 shadow-xs rounded-[12px] flex items-center justify-between transition-all"
                       >
-                        <div className="flex items-start gap-4">
-                          <div
-                            className={`mt-0.5 p-2 rounded-md ${isItemPast ? 'bg-muted' : 'bg-primary/10'}`}
-                          >
-                            <CalendarDaysIcon
-                              className={`w-4 h-4 ${isItemPast ? 'text-muted-foreground' : 'text-primary'}`}
-                            />
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-muted/20 border border-border/30 flex flex-col items-center justify-center shrink-0">
+                            <CalendarIcon className="w-4 h-4 text-muted-foreground/60" />
                           </div>
-                          <div>
+                          <div className="flex flex-col">
                             <h4
-                              className={`font-semibold text-base ${isItemPast ? 'line-through decoration-muted-foreground/30' : ''}`}
+                              className={`font-semibold text-[13.5px] text-zinc-900 ${isItemPast ? 'text-muted-foreground line-through decoration-muted-foreground/30 opacity-70' : ''}`}
                             >
                               {item.itemTitle}
                             </h4>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
-                              <ClockIcon className="w-3.5 h-3.5" />
-                              {date1.toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}
-                              {item.date2 &&
-                                ` - ${new Date(item.date2).toLocaleDateString('es-ES', { day: '2-digit', month: 'long' })}`}
-                            </p>
                           </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-[12px] text-muted-foreground font-medium hidden xs:block">
+                            {date1.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
+                            {item.date2 &&
+                              ` - ${new Date(item.date2).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}`}
+                          </span>
                         </div>
                       </div>
                     )
                   }
 
-                  // RENDERIZADO ÍTEM DE REUNIÓN (Diferenciado visualmente)
                   if (item.type === 'meeting') {
                     const isCompleted = item.status === 'completed'
                     const isScheduled = item.status === 'scheduled' && item.scheduledDate
@@ -206,45 +301,46 @@ export function CalendarioView({ sponsor }: { sponsor: any }) {
                     return (
                       <div
                         key={iIndex}
-                        className={`p-4 rounded-lg border-l-4 border-y border-r transition-colors 
-                        ${isCompleted ? 'bg-muted/30 border-l-zinc-900 opacity-70' : 'bg-card border-l-primary shadow-sm'}
-                      `}
+                        className={`py-3 px-4 bg-white border border-border/60 shadow-xs rounded-[12px] flex items-center justify-between transition-all border-l-4 ${isCompleted ? 'border-l-zinc-700' : 'border-l-zinc-900'}`}
                       >
-                        <div className="flex items-start gap-4">
-                          <div
-                            className={`mt-0.5 p-2 rounded-md ${isCompleted ? 'bg-muted' : 'bg-primary/10'}`}
-                          >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-muted/20 border border-border/30 flex flex-col items-center justify-center shrink-0">
                             <VideoIcon
-                              className={`w-4 h-4 ${isCompleted ? 'text-zinc-900' : 'text-primary'}`}
+                              className={`w-4 h-4 ${isCompleted ? 'text-muted-foreground/60' : 'text-zinc-600'}`}
                             />
                           </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] px-1.5 py-0 h-4 border-primary/30 text-primary"
-                              >
-                                REUNIÓN B2B
-                              </Badge>
-                            </div>
+                          <div className="flex flex-col mb-0.5">
+                            <span className="text-[9.5px] font-bold tracking-widest text-muted-foreground uppercase leading-tight mb-0.5">
+                              Reunión B2B
+                            </span>
                             <h4
-                              className={`font-semibold text-base ${isCompleted ? 'line-through decoration-muted-foreground/30' : ''}`}
+                              className={`font-semibold text-[13.5px] text-zinc-900 leading-tight ${isCompleted ? 'text-muted-foreground line-through decoration-muted-foreground/30 opacity-70' : ''}`}
                             >
                               {item.name}
                             </h4>
-                            <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1 font-medium">
-                              <CalendarIcon className="w-3.5 h-3.5" />
-                              {isScheduled
-                                ? new Date(item.scheduledDate).toLocaleDateString('es-ES', {
-                                    day: '2-digit',
-                                    month: 'long',
-                                    timeZone: 'UTC',
-                                  })
-                                : `Mes proyectado: ${item.projectedMonth || 'Por definir'}`}
-                            </p>
                           </div>
-                          {isCompleted && (
-                            <CheckCircle2Icon className="w-5 h-5 text-zinc-900 hidden sm:block" />
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <span className="text-[12px] text-muted-foreground font-medium hidden xs:block">
+                            {isScheduled
+                              ? new Date(item.scheduledDate).toLocaleDateString('es-ES', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  timeZone: 'UTC',
+                                })
+                              : item.projectedMonth || 'Por definir'}
+                          </span>
+                          {isCompleted ? (
+                            <div className="bg-[#4b4e54] w-[26px] h-[26px] rounded-[6px] flex items-center justify-center shrink-0">
+                              <CheckCircle2Icon className="w-4 h-4 text-white" />
+                            </div>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="border-border/80 bg-background text-zinc-600 h-[26px] font-medium shadow-none px-2.5"
+                            >
+                              Agendada
+                            </Badge>
                           )}
                         </div>
                       </div>

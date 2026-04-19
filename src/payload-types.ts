@@ -306,6 +306,12 @@ export interface Event {
   endDate: string;
   logo?: (number | null) | Media;
   backgroundImage?: (number | null) | Media;
+  location?: {
+    venue?: string | null;
+    city?: string | null;
+    country?: string | null;
+    details?: string | null;
+  };
   /**
    * Configura el único calendario de este evento, añadiendo sus diferentes momentos e ítems.
    */
@@ -627,6 +633,14 @@ export interface EventsSelect<T extends boolean = true> {
   endDate?: T;
   logo?: T;
   backgroundImage?: T;
+  location?:
+    | T
+    | {
+        venue?: T;
+        city?: T;
+        country?: T;
+        details?: T;
+      };
   journey?:
     | T
     | {

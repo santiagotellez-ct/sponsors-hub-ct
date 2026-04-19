@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -24,7 +24,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
-  ChevronsUpDownIcon,
+  MoreHorizontalIcon,
   LogOutIcon,
   Loader2Icon,
   SettingsIcon,
@@ -63,6 +63,16 @@ export function NavUser({
       console.error('Error al cerrar sesión:', error)
     }
   }
+
+  // Listener para abrir el modal desde el sidebar
+  useEffect(() => {
+    const handleOpenSettings = () => {
+      setActiveTab('general')
+      setIsAccountOpen(true)
+    }
+    window.addEventListener('open-settings', handleOpenSettings)
+    return () => window.removeEventListener('open-settings', handleOpenSettings)
+  }, [])
 
   // CAMBIO DE CONTRASEÑA
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -116,62 +126,65 @@ export function NavUser({
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
-                  <Avatar className="h-8 w-8 rounded-lg bg-background">
-                    <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
-                    <AvatarFallback className="rounded-lg">{user.name.charAt(0)}</AvatarFallback>
-                  </Avatar>
+                  <div className="flex items-center justify-center h-8 w-8 shrink-0 rounded-lg bg-white border border-border/60 overflow-hidden">
+                    {user.avatar ? (
+                      <img src={user.avatar} alt={user.name} className="h-6 w-6 object-contain" />
+                    ) : (
+                      <span className="text-xs font-bold text-zinc-700">{user.name.substring(0, 2).toUpperCase()}</span>
+                    )}
+                  </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-bold">{user.name}</span>
                     <span className="truncate text-xs">{user.email}</span>
                   </div>
-                  <ChevronsUpDownIcon className="ml-auto size-4" />
+                  <MoreHorizontalIcon className="ml-auto size-4 opacity-50" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent
-                className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-                side={isMobile ? 'bottom' : 'right'}
-                align="end"
-                sideOffset={4}
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            side={isMobile ? 'bottom' : 'right'}
+            align="end"
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="p-0 font-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <Avatar className="h-8 w-8 rounded-lg bg-background">
+                  <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
+                  <AvatarFallback className="rounded-lg">{user.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-bold">{user.name}</span>
+                  <span className="truncate text-xs">{user.email}</span>
+                </div>
+              </div>
+            </DropdownMenuLabel>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onSelect={(e) => {
+                  e.preventDefault()
+                  setActiveTab('general') // Al abrir, siempre mostramos General por defecto
+                  setIsAccountOpen(true)
+                }}
               >
-                <DropdownMenuLabel className="p-0 font-normal">
-                  <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <Avatar className="h-8 w-8 rounded-lg bg-background">
-                      <AvatarImage src={user.avatar} alt={user.name} className="object-cover" />
-                      <AvatarFallback className="rounded-lg">{user.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-bold">{user.name}</span>
-                      <span className="truncate text-xs">{user.email}</span>
-                    </div>
-                  </div>
-                </DropdownMenuLabel>
+                <SettingsIcon className="mr-2 w-4 h-4" />
+                Configuración de Cuenta
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
 
-                <DropdownMenuSeparator />
+            <DropdownMenuSeparator />
 
-                <DropdownMenuGroup>
-                  <DropdownMenuItem
-                    className="cursor-pointer"
-                    onSelect={(e) => {
-                      e.preventDefault()
-                      setActiveTab('general') // Al abrir, siempre mostramos General por defecto
-                      setIsAccountOpen(true)
-                    }}
-                  >
-                    <SettingsIcon className="mr-2 w-4 h-4" />
-                    Configuración de Cuenta
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem
-                  className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                  onSelect={handleLogout}
-                >
-                  <LogOutIcon className="mr-2 w-4 h-4" />
-                  Cerrar Sesión
-                </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+              onSelect={handleLogout}
+            >
+              <LogOutIcon className="mr-2 w-4 h-4" />
+              Cerrar Sesión
+            </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </SidebarMenuItem>
@@ -292,7 +305,7 @@ export function NavUser({
                   <Button
                     type="submit"
                     disabled={isPwdLoading}
-                    className="w-full bg-zinc-900 text-white mt-2"
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mt-2"
                   >
                     {isPwdLoading ? <Loader2Icon className="w-4 h-4 animate-spin mr-2" /> : null}
                     Actualizar Contraseña

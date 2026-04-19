@@ -38,6 +38,30 @@ export const Events: CollectionConfig = {
     },
 
     /* ==========================================
+       UBICACIÓN DEL EVENTO
+       ========================================== */
+    {
+      name: 'location',
+      type: 'group',
+      label: 'Ubicación del Evento',
+      fields: [
+        { name: 'venue', type: 'text', label: 'Lugar del Evento' },
+        {
+          type: 'row',
+          fields: [
+            { name: 'city', type: 'text', label: 'Ciudad' },
+            { name: 'country', type: 'text', label: 'País' },
+          ],
+        },
+        {
+          name: 'details',
+          type: 'textarea',
+          label: 'Detalle (Ej. Dirección exacta, piso, salón)',
+        },
+      ],
+    },
+
+    /* ==========================================
        CALENDARIO / JOURNEY DEL EVENTO
        ========================================== */
     {
@@ -111,7 +135,6 @@ export const Events: CollectionConfig = {
           admin: { description: 'Ej: "Octubre 2026" o un selector de fecha referencial.' },
         },
         { name: 'calendlyLink', type: 'text', label: 'Link de Calendly (Embed)' },
-        // ---> CAMBIO CLAVE AQUÍ: Reflejamos el nuevo texto explicativo
         {
           name: 'platform',
           type: 'text',

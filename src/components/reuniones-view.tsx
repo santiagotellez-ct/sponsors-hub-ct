@@ -144,7 +144,7 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
             >
               <div
                 className={`flex items-center justify-center w-10 h-10 rounded-full border-4 border-background shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10
-                ${isCompleted ? 'bg-zinc-900 text-white' : isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}
+                ${isCompleted ? 'bg-primary text-primary-foreground' : isActive ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}
               `}
               >
                 {isCompleted ? (
@@ -172,7 +172,7 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
                     </div>
 
                     {isCompleted && (
-                      <Badge className="bg-zinc-900 text-white hover:bg-zinc-800">Completada</Badge>
+                      <Badge className="bg-primary text-primary-foreground hover:bg-primary/90">Completada</Badge>
                     )}
                     {isPastDue && !isCompleted && (
                       <Badge
@@ -226,7 +226,7 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
                                   href={meeting.platform}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white rounded-md font-medium hover:bg-zinc-800 transition-colors"
+                                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90 transition-colors"
                                 >
                                   <VideoIcon className="w-4 h-4" />
                                   Entrar a la videollamada
@@ -286,7 +286,7 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
                           <Button
                             onClick={() => handleConfirmDate(meeting.id)}
                             disabled={isUpdating || !selectedDate}
-                            className="bg-zinc-900 text-white"
+                            className="bg-primary text-primary-foreground"
                           >
                             {isUpdating ? (
                               <Loader2Icon className="w-4 h-4 animate-spin mr-2" />

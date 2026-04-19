@@ -28,11 +28,13 @@ import {
   FileTextIcon,
   ExternalLinkIcon,
   AlignLeftIcon,
+  UploadIcon,
 } from 'lucide-react'
 
 export function EntregablesView({ sponsor }: { sponsor: any }) {
   const router = useRouter()
   const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [expandedDeliverable, setExpandedDeliverable] = useState<string | null>(null)
 
   // Estados para manejar los inputs de los entregables
   const [fileInputs, setFileInputs] = useState<Record<string, File | null>>({})
@@ -93,9 +95,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
       currentPart.plan =
         typeof currentPart.plan === 'object' ? currentPart.plan.id : currentPart.plan
 
-      // === AQUÍ ESTÁ LA CORRECCIÓN ===
       currentPart.deliverables = currentPart.deliverables.map((d: any) => {
-        // Validación estricta solo por ID
         if (d.id === deliverableId) {
           return {
             ...d,
@@ -123,6 +123,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
 
       if (!updateRes.ok) throw new Error('Error actualizando la base de datos')
 
+      setExpandedDeliverable(null)
       router.refresh()
     } catch (error) {
       console.error(error)
@@ -132,33 +133,126 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
     }
   }
 
-  let isPreviousBlockCompleted = true
+  // --- LOGICA DE ESTADÍSTICAS ---
+  let totalDeliverablesCount = 0
+  let completedDeliverablesCount = 0
+  let pendingDeliverablesCount = 0
+  let blockedDeliverablesCount = 0
+
+  let localIsPreviousComplete = true
+
+  benefits.forEach((benefit: any) => {
+    const categoryName = benefit.benefitName
+    const blockDeliverables = participationDeliverables.filter(
+      (d: any) => d.benefitCategory === categoryName,
+    )
+    const blockItems = participationItems.filter(
+      (item: any) => item.benefitCategory === categoryName,
+    )
+
+    const isBlockUnlocked = isFirstMeetingReady && localIsPreviousComplete
+
+    // Verificamos estatus de los items para desbloquear el siguiente bloque
+    const isCurrentBlockComplete =
+      blockItems.length > 0 && blockItems.every((item: any) => item.status === 'completed')
+
+    blockDeliverables.forEach((d: any) => {
+      totalDeliverablesCount++
+      if (d.status === 'completed') {
+        completedDeliverablesCount++
+      } else if (!isBlockUnlocked) {
+        blockedDeliverablesCount++
+      } else {
+        pendingDeliverablesCount++
+      }
+    })
+
+    // Actualizamos variable propagada para la iteración del siguiente map()
+    localIsPreviousComplete = isCurrentBlockComplete
+  })
+
+  const completedPercent =
+    totalDeliverablesCount > 0
+      ? Math.round((completedDeliverablesCount / totalDeliverablesCount) * 100)
+      : 0
+
+  let isPreviousBlockCompletedMap = true // Reset for actual render loop
 
   return (
     <>
       <div className="space-y-8 pb-10">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Progreso y Entregables</h1>
-          <p className="text-muted-foreground mt-2">
-            Complete los requerimientos para desbloquear la ejecución de sus beneficios.
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+            Progreso y entregables
+          </h1>
+          <p className="text-muted-foreground mt-2 text-[15px]">
+            Completa los requerimientos para desbloquear la ejecución de tus beneficios.
           </p>
         </div>
 
+        {/* 4 CARDS SUPERIORES */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+          <Card className="shadow-sm border-border/80 rounded-[14px]">
+            <CardContent className="p-5 flex flex-col gap-1">
+              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                Total
+              </span>
+              <span className="text-3xl font-bold text-foreground">{totalDeliverablesCount}</span>
+              <span className="text-xs text-muted-foreground/90 font-medium">
+                Entregables del plan
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-border/80 rounded-[14px]">
+            <CardContent className="p-5 flex flex-col gap-1">
+              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                Completados
+              </span>
+              <span className="text-3xl font-bold text-foreground">
+                {completedDeliverablesCount}
+              </span>
+              <span className="text-xs text-muted-foreground/90 font-medium">
+                {completedPercent}% del total
+              </span>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-border/80 rounded-[14px]">
+            <CardContent className="p-5 flex flex-col gap-1">
+              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                Pendientes
+              </span>
+              <span className="text-3xl font-bold text-foreground">{pendingDeliverablesCount}</span>
+              <span className="text-xs text-muted-foreground/90 font-medium">Requieren acción</span>
+            </CardContent>
+          </Card>
+          <Card className="shadow-sm border-border/80 rounded-[14px]">
+            <CardContent className="p-5 flex flex-col gap-1">
+              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                Bloqueados
+              </span>
+              <span className="text-3xl font-bold text-foreground">{blockedDeliverablesCount}</span>
+              <span className="text-xs text-muted-foreground/90 font-medium">
+                Se desbloquean proximamente
+              </span>
+            </CardContent>
+          </Card>
+        </div>
+
         {!isFirstMeetingReady && firstMeeting && (
-          <div className="bg-primary/10 border border-primary/20 text-primary px-6 py-4 rounded-lg flex items-start gap-4">
+          <div className="bg-primary/10 border border-primary/20 text-primary px-6 py-4 rounded-xl flex items-start gap-4">
             <AlertCircleIcon className="w-6 h-6 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-semibold text-lg">Entregables Bloqueados</h3>
               <p className="text-sm mt-1 opacity-90">
-                Cuando haya <strong>agendado</strong> la reunión{' '}
+                Cuando hayas <strong>agendado</strong> la reunión{' '}
                 <strong>"{firstMeeting.name}"</strong> se habilitarán los primeros entregables para
-                que pueda comenzar a subir su material.
+                que puedas comenzar a subir tu material.
               </p>
             </div>
           </div>
         )}
 
-        <div className="ml-2 md:ml-4 border-l-2 border-muted-foreground/20 space-y-10 mt-8">
+        <div className="ml-2 md:ml-4 border-l-[1.5px] border-muted-foreground/20 space-y-8 mt-10">
           {benefits.map((benefit: any, index: number) => {
             const categoryName = benefit.benefitName
             const blockDeliverables = participationDeliverables.filter(
@@ -168,204 +262,288 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
               (item: any) => item.benefitCategory === categoryName,
             )
 
-            const isBlockUnlocked = isFirstMeetingReady && isPreviousBlockCompleted
-
+            const isBlockUnlocked = isFirstMeetingReady && isPreviousBlockCompletedMap
             const isCurrentBlockCompleted =
               blockItems.length > 0 && blockItems.every((item: any) => item.status === 'completed')
 
-            isPreviousBlockCompleted = isCurrentBlockCompleted
+            isPreviousBlockCompletedMap = isCurrentBlockCompleted
 
             return (
-              <div key={index} className="relative pl-8 md:pl-10">
+              <div key={index} className="relative pl-8 md:pl-12">
                 <div
-                  className={`absolute -left-[17px] top-1 flex items-center justify-center w-8 h-8 rounded-full border-4 border-background shrink-0
-                  ${isCurrentBlockCompleted ? 'bg-zinc-900 text-white' : isBlockUnlocked ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'}
+                  className={`absolute -left-[14px] top-4 flex items-center justify-center w-7 h-7 rounded-full shrink-0 outline outline-4 outline-background
+                  ${isCurrentBlockCompleted ? 'bg-primary text-primary-foreground' : isBlockUnlocked ? 'bg-white border border-muted-foreground/40 text-muted-foreground' : 'bg-transparent border-2 border-muted-foreground/20 text-muted-foreground/40'}
                 `}
                 >
                   {isCurrentBlockCompleted ? (
-                    <CheckCircle2Icon className="w-4 h-4" />
+                    <CheckCircle2Icon className="w-3.5 h-3.5" />
                   ) : isBlockUnlocked ? (
-                    <ClockIcon className="w-4 h-4" />
+                    <ClockIcon className="w-3.5 h-3.5" />
                   ) : (
                     <LockIcon className="w-3 h-3" />
                   )}
                 </div>
 
-                <Card
-                  className={`w-full max-w-3xl shadow-sm transition-opacity ${!isBlockUnlocked ? 'opacity-60 grayscale-[50%]' : ''}`}
+                <div
+                  className={`w-full max-w-4xl bg-white border border-border/60 rounded-2xl overflow-hidden transition-all duration-300 ${!isBlockUnlocked ? 'opacity-50 pointer-events-none' : ''}`}
                 >
-                  <CardHeader className="bg-muted/30 pb-4 border-b">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="flex items-center gap-2">
-                        <LayoutListIcon className="w-5 h-5 text-muted-foreground" />
-                        <CardTitle className="text-xl">{categoryName}</CardTitle>
-                      </div>
+                  {/* HEADER DEL BLOQUE */}
+                  <div className="bg-muted/30 px-5 py-4 border-b border-border/50 flex justify-between items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <LayoutListIcon className="w-5 h-5 text-muted-foreground/70" />
+                      <h3 className="text-[17px] font-bold text-zinc-900">{categoryName}</h3>
+                    </div>
+                    <div>
                       {!isBlockUnlocked && (
-                        <Badge variant="secondary" className="bg-muted-foreground/20">
-                          <LockIcon className="w-3 h-3 mr-1" /> Bloqueado
+                        <Badge
+                          variant="outline"
+                          className="bg-transparent text-muted-foreground border-muted-foreground/30 px-3 h-7"
+                        >
+                          Bloqueado
                         </Badge>
                       )}
                       {isBlockUnlocked && !isCurrentBlockCompleted && (
-                        <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-0">
-                          En Turno
+                        <Badge
+                          variant="outline"
+                          className="bg-background text-zinc-600 border-border/80 px-3 h-7 font-medium"
+                        >
+                          En turno
                         </Badge>
                       )}
                       {isCurrentBlockCompleted && (
-                        <Badge className="bg-zinc-900 text-white hover:bg-zinc-800">
-                          Completado
+                        <Badge className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 h-7">
+                          <CheckCircle2Icon className="w-3.5 h-3.5 mr-1" /> Completado
                         </Badge>
                       )}
                     </div>
-                  </CardHeader>
+                  </div>
 
-                  <CardContent className="pt-6 space-y-6">
+                  {/* CONTENIDO DEL BLOQUE */}
+                  <div className="p-5 lg:p-7 space-y-8">
+                    {/* SECCIÓN MATERIAL REQUERIDO */}
                     {benefit.hasDeliverable && blockDeliverables.length > 0 && (
-                      <div className="space-y-4 bg-muted/10 p-5 rounded-lg border border-dashed">
-                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-4 text-foreground/80">
-                          <UploadCloudIcon className="w-4 h-4" /> Material Requerido
+                      <div className="space-y-4">
+                        <h4 className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase flex items-center gap-2">
+                          <UploadIcon className="w-3.5 h-3.5" /> Material Requerido
                         </h4>
-                        {blockDeliverables.map((deliv: any, dIndex: number) => {
-                          const isPending = deliv.status === 'pending' || deliv.status === 'overdue'
+                        <div className="space-y-3">
+                          {blockDeliverables.map((deliv: any, dIndex: number) => {
+                            const isPending =
+                              deliv.status === 'pending' || deliv.status === 'overdue'
 
-                          return (
-                            <div
-                              key={deliv.id || dIndex}
-                              className="space-y-3 pb-3 border-b last:border-0 last:pb-0"
-                            >
-                              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                                <Label className="text-base font-medium">{deliv.itemName}</Label>
-                                <Badge
-                                  variant="outline"
-                                  className="w-fit text-xs font-mono bg-background"
-                                >
-                                  Máx: {new Date(deliv.dueDate).toLocaleDateString('es-ES')}
-                                </Badge>
-                              </div>
+                            return (
+                              <div key={deliv.id || dIndex}>
+                                {isPending ? (
+                                  <div className="flex flex-col border border-border/60 rounded-xl bg-background shadow-xs overflow-hidden transition-all max-w-3xl">
+                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 gap-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+                                          {deliv.type === 'document' || deliv.type === 'direct' ? (
+                                            <FileTextIcon className="w-5 h-5 text-muted-foreground/80" />
+                                          ) : (
+                                            <ImageIcon className="w-5 h-5 text-muted-foreground/80" />
+                                          )}
+                                        </div>
+                                        <div>
+                                          <p className="font-semibold text-[13.5px] text-zinc-900">
+                                            {deliv.itemName}
+                                          </p>
+                                          <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                                            Vence{' '}
+                                            <span className="font-medium">
+                                              {new Date(deliv.dueDate).toLocaleDateString('es-ES', {
+                                                day: 'numeric',
+                                                month: 'short',
+                                              })}
+                                            </span>
+                                          </p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+                                        <Badge
+                                          variant="outline"
+                                          className="text-amber-600 border-amber-300 bg-amber-50 h-7 px-3 text-xs font-medium"
+                                        >
+                                          Pendiente
+                                        </Badge>
+                                        {deliv.type !== 'direct' && (
+                                          <Button
+                                            className="bg-primary text-primary-foreground h-7 text-xs px-4"
+                                            onClick={() =>
+                                              setExpandedDeliverable(
+                                                expandedDeliverable === deliv.id ? null : deliv.id,
+                                              )
+                                            }
+                                          >
+                                            {expandedDeliverable === deliv.id
+                                              ? 'Cancelar'
+                                              : 'Enviar'}
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
 
-                              {isPending ? (
-                                <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 items-end pt-2">
-                                  <div className="space-y-2 w-full">
-                                    {(deliv.type === 'document' || deliv.type === 'image') && (
-                                      <Input
-                                        type="file"
-                                        disabled={!isBlockUnlocked || loadingId === deliv.id}
-                                        onChange={(e) =>
-                                          setFileInputs({
-                                            ...fileInputs,
-                                            [deliv.id]: e.target.files?.[0] || null,
-                                          })
-                                        }
-                                      />
-                                    )}
-                                    {deliv.type === 'text' && (
-                                      <Textarea
-                                        placeholder="Ingrese el texto o información solicitada..."
-                                        className="min-h-[80px]"
-                                        disabled={!isBlockUnlocked || loadingId === deliv.id}
-                                        onChange={(e) =>
-                                          setTextInputs({
-                                            ...textInputs,
-                                            [deliv.id]: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    )}
-                                    {deliv.type === 'link' && (
-                                      <Input
-                                        type="url"
-                                        placeholder="https://ejemplo.com"
-                                        disabled={!isBlockUnlocked || loadingId === deliv.id}
-                                        onChange={(e) =>
-                                          setLinkInputs({
-                                            ...linkInputs,
-                                            [deliv.id]: e.target.value,
-                                          })
-                                        }
-                                      />
-                                    )}
-                                    {deliv.type === 'direct' && (
-                                      <p className="text-sm text-muted-foreground border p-3 rounded-md bg-background">
-                                        Este entregable se coordinará directamente por WhatsApp o
-                                        Email corporativo.
-                                      </p>
+                                    {/* EXPANDABLE UPLOAD AREA */}
+                                    {expandedDeliverable === deliv.id && (
+                                      <div className="p-4 bg-muted/10 border-t flex flex-col md:flex-row gap-3 items-end">
+                                        <div className="w-full">
+                                          {(deliv.type === 'document' ||
+                                            deliv.type === 'image') && (
+                                            <Input
+                                              type="file"
+                                              className="bg-white"
+                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              onChange={(e) =>
+                                                setFileInputs({
+                                                  ...fileInputs,
+                                                  [deliv.id]: e.target.files?.[0] || null,
+                                                })
+                                              }
+                                            />
+                                          )}
+                                          {deliv.type === 'text' && (
+                                            <Textarea
+                                              placeholder="Ingrese la información solicitada aquí..."
+                                              className="min-h-[80px] bg-white"
+                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              onChange={(e) =>
+                                                setTextInputs({
+                                                  ...textInputs,
+                                                  [deliv.id]: e.target.value,
+                                                })
+                                              }
+                                            />
+                                          )}
+                                          {deliv.type === 'link' && (
+                                            <Input
+                                              type="url"
+                                              placeholder="https://ejemplo.com"
+                                              className="bg-white"
+                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              onChange={(e) =>
+                                                setLinkInputs({
+                                                  ...linkInputs,
+                                                  [deliv.id]: e.target.value,
+                                                })
+                                              }
+                                            />
+                                          )}
+                                        </div>
+                                        <Button
+                                          className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
+                                          disabled={loadingId === deliv.id}
+                                          onClick={() =>
+                                            handleSubmitDeliverable(
+                                              deliv.id,
+                                              categoryName,
+                                              deliv.type,
+                                            )
+                                          }
+                                        >
+                                          {loadingId === deliv.id ? (
+                                            <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                                          ) : (
+                                            'Confirmar Envío'
+                                          )}
+                                        </Button>
+                                      </div>
                                     )}
                                   </div>
-
-                                  {deliv.type !== 'direct' && (
-                                    <Button
-                                      className="bg-zinc-900 text-white w-full md:w-auto"
-                                      disabled={!isBlockUnlocked || loadingId === deliv.id}
-                                      onClick={() =>
-                                        handleSubmitDeliverable(deliv.id, categoryName, deliv.type)
-                                      }
-                                    >
-                                      {loadingId === deliv.id ? (
-                                        <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
-                                      ) : (
-                                        'Enviar'
-                                      )}
-                                    </Button>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="flex items-center text-sm text-green-700 bg-green-50/50 px-4 py-3 rounded-md border border-green-200 mt-2">
-                                  <CheckCircle2Icon className="w-5 h-5 mr-3 shrink-0" />
-                                  <span>Entregable recibido y registrado exitosamente.</span>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        })}
+                                ) : (
+                                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 border border-border/50 rounded-xl bg-background shadow-xs max-w-3xl">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-10 h-10 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                                        <FileTextIcon className="w-5 h-5 text-emerald-600/70" />
+                                      </div>
+                                      <div>
+                                        <p className="font-semibold text-[13.5px] text-zinc-900">
+                                          {deliv.itemName}
+                                        </p>
+                                        <p className="text-[11.5px] text-muted-foreground mt-0.5">
+                                          Vence{' '}
+                                          <span className="font-medium">
+                                            {new Date(deliv.dueDate).toLocaleDateString('es-ES', {
+                                              day: 'numeric',
+                                              month: 'short',
+                                            })}
+                                          </span>
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+                                      <Badge
+                                        variant="outline"
+                                        className="text-emerald-700 border-emerald-300 bg-emerald-50 h-7 px-3 text-xs font-medium"
+                                      >
+                                        <CheckCircle2Icon className="w-3 h-3 mr-1.5" /> Enviado
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
                       </div>
                     )}
 
+                    {/* SECCIÓN PROGRESO DE BENEFICIOS */}
                     {blockItems.length > 0 && (
-                      <div className="space-y-3 pt-2">
-                        <h4 className="text-sm font-semibold text-foreground/80 mb-3">
-                          Progreso de Beneficios
+                      <div className="space-y-4 pt-2">
+                        <h4 className="text-[11px] font-bold tracking-widest text-muted-foreground uppercase">
+                          Progreso de Beneficios (
+                          {blockItems.filter((i: any) => i.status === 'completed').length}/
+                          {blockItems.length})
                         </h4>
-                        <div className="grid gap-2">
+                        <div className="space-y-2 max-w-3xl">
                           {blockItems.map((item: any, iIndex: number) => {
-                            // Validamos si este item en particular tiene evidencias cargadas
                             const hasEvidences = item.evidences && item.evidences.length > 0
 
                             return (
                               <div
                                 key={iIndex}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg border bg-background text-sm shadow-sm"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 py-3.5 rounded-[10px] border border-border/60 bg-background text-sm shadow-xs"
                               >
-                                <span className="font-medium text-foreground">{item.itemName}</span>
                                 <div className="flex items-center gap-3">
-                                  {/* BOTÓN PARA VER EVIDENCIAS (Aparece solo si hay) */}
+                                  {item.status === 'completed' ? (
+                                    <div className="w-[18px] h-[18px] rounded-full bg-primary text-primary-foreground flex items-center justify-center shrink-0">
+                                      <CheckCircle2Icon className="w-[11px] h-[11px]" />
+                                    </div>
+                                  ) : (
+                                    <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-muted-foreground/30 bg-muted/10 shrink-0" />
+                                  )}
+                                  <span className="font-medium text-foreground text-[13.5px]">
+                                    {item.itemName}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-4">
                                   {hasEvidences && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs"
+                                    <button
                                       onClick={() => setEvidenceItem(item)}
+                                      className="text-[12px] font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors"
                                     >
-                                      <EyeIcon className="w-3.5 h-3.5 mr-1.5" />
-                                      Ver Evidencia
-                                    </Button>
+                                      <EyeIcon className="w-3.5 h-3.5 opacity-70" />
+                                      Evidencia
+                                    </button>
                                   )}
 
                                   {item.status === 'completed' && (
-                                    <Badge className="bg-zinc-900 text-white w-fit">
+                                    <Badge className="bg-primary text-primary-foreground min-w-[90px] justify-center text-[11px] h-6 px-2.5 rounded-md hover:bg-primary/90">
                                       Completado
                                     </Badge>
                                   )}
                                   {item.status === 'in_progress' && (
                                     <Badge
                                       variant="outline"
-                                      className="text-amber-600 border-amber-300 bg-amber-50 w-fit"
+                                      className="text-amber-700 border-amber-300 bg-amber-50/50 min-w-[90px] justify-center text-[11px] h-6 px-2.5 rounded-md shadow-none"
                                     >
                                       En progreso
                                     </Badge>
                                   )}
                                   {item.status === 'not_started' && (
-                                    <Badge variant="secondary" className="opacity-60 w-fit">
+                                    <div className="text-muted-foreground/60 text-[11.5px] font-medium min-w-[90px] text-right pr-1">
                                       No iniciado
-                                    </Badge>
+                                    </div>
                                   )}
                                 </div>
                               </div>
@@ -374,15 +552,15 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </div>
             )
           })}
         </div>
       </div>
 
-      {/* MODAL (DIALOG) PARA MOSTRAR LAS EVIDENCIAS */}
+      {/* MODAL EVIDENCIAS */}
       <Dialog open={!!evidenceItem} onOpenChange={(open) => !open && setEvidenceItem(null)}>
         <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
@@ -398,7 +576,6 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
 
               return (
                 <div key={idx} className="space-y-2 border rounded-lg p-4 bg-muted/20">
-                  {/* TIPO: IMAGEN */}
                   {ev.type === 'image' && fileUrl && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -414,7 +591,6 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                     </div>
                   )}
 
-                  {/* TIPO: DOCUMENTO */}
                   {ev.type === 'document' && fileUrl && (
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-3 bg-background border rounded-md">
                       <div className="flex items-center gap-2">
@@ -429,7 +605,6 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                     </div>
                   )}
 
-                  {/* TIPO: TEXTO */}
                   {ev.type === 'text' && ev.text && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
@@ -441,7 +616,6 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                     </div>
                   )}
 
-                  {/* TIPO: LINK */}
                   {ev.type === 'link' && ev.link && (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">

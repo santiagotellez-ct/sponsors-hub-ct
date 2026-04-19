@@ -229,7 +229,7 @@ export function OnboardingForm({ sponsor }: { sponsor: any }) {
         <Button
           type="submit"
           size="lg"
-          className="bg-zinc-900 text-white hover:bg-zinc-800 disabled:opacity-50"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           disabled={isLoading}
         >
           {isLoading ? (
