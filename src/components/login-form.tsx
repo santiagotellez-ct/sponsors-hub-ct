@@ -135,7 +135,7 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
       </form>
 
       <FieldDescription className="px-6 text-center mt-4">
-        Uso exclusivo para patrocinadores autorizados. Contacte a soporte si tiene problemas de
+        Uso exclusivo para patrocinadores autorizados. Contacte al equipo si tiene problemas de
         acceso.
       </FieldDescription>
     </div>

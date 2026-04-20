@@ -348,7 +348,7 @@ export const Sponsors: CollectionConfig = {
 
             if (contactEmail && rawPassword) {
               await resend.emails.send({
-                from: 'Colombia Tech <hola@prueba.tllz.cloud>',
+                from: 'Colombia Tech <hola@sponsor.colombiatechweek.co>',
                 to: contactEmail,
                 subject: 'Tus credenciales de acceso | Sponsor Hub',
                 react: WelcomeEmail({
@@ -406,7 +406,7 @@ export const Sponsors: CollectionConfig = {
             // Si encontramos una evidencia nueva, disparamos el correo
             if (newEvidenceFound) {
               await resend.emails.send({
-                from: 'Colombia Tech <hola@prueba.tllz.cloud>',
+                from: 'Colombia Tech <hola@sponsor.colombiatechweek.co>',
                 to: contactEmail,
                 subject: 'Nueva evidencia en tu patrocinio | Sponsor Hub',
                 react: EvidenceUploadedEmail({
