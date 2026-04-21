@@ -67,6 +67,19 @@ export default async function DashboardPage() {
 
   const needsOnboarding = !hasLogo || !hasContactInfo || !hasStrategy
 
+  // 1.5 VALIDACIÓN DE ENTREGABLES DEL LOGO
+  const deliverablesAuth = activeParticipation?.deliverables || []
+  const logoDeliverables = deliverablesAuth.filter((d: any) =>
+    d.itemName.toLowerCase().includes('logo'),
+  )
+  const isLogoCompleted =
+    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
+
+  // Redirigir si no ha completado los entregables de logo
+  if (!needsOnboarding && !isLogoCompleted) {
+    redirect('/dashboard/entregables')
+  }
+
   // 2. EJECUCIÓN DEL PATROCINIO
   const benefitItems = activeParticipation?.benefitItems || []
   const totalItems = benefitItems.length
@@ -137,7 +150,7 @@ export default async function DashboardPage() {
         id: index + 1,
         title: c.title,
         subtitle: 'Beneficios',
-        status: isCompleted ? 'completed' : (isActive ? 'active' : 'pending'),
+        status: isCompleted ? 'completed' : isActive ? 'active' : 'pending',
       }
     })
 
@@ -148,19 +161,18 @@ export default async function DashboardPage() {
         moments[firstPending].status = 'active'
       }
     }
-    
+
     // Todo lo que esté antes del activo lo podemos marcar completado, y todo lo que esté después locked (opcional)
     let finalActiveSeen = false
     moments.forEach((m) => {
       if (m.status === 'active') {
-         finalActiveSeen = true
+        finalActiveSeen = true
       } else if (!finalActiveSeen) {
-         m.status = 'completed'
+        m.status = 'completed'
       } else {
-         m.status = 'locked'
+        m.status = 'locked'
       }
     })
-
   } else {
     // FALLBACK
     moments = [
@@ -168,8 +180,10 @@ export default async function DashboardPage() {
     ]
   }
 
-  const currentPhase = moments.find((m) => m.status === 'active')?.title || moments[moments.length - 1]?.title || 'En curso'
-
+  const currentPhase =
+    moments.find((m) => m.status === 'active')?.title ||
+    moments[moments.length - 1]?.title ||
+    'En curso'
 
   // 6. ENTREGABLES RECIENTES (Máx 4 para la tabla inferior)
   const deliverables = activeParticipation?.deliverables || []
@@ -196,7 +210,7 @@ export default async function DashboardPage() {
                   <div className="max-w-3xl mx-auto w-full mt-4 mb-20">
                     <div className="mb-6">
                       <h1 className="text-3xl font-bold tracking-tight">
-                        Bienvenido a Sponsors Hub
+                        Bienvenido a Sponsor Hub
                       </h1>
                       <p className="text-muted-foreground mt-2">
                         Para habilitar su panel de control, por favor complete la información básica
@@ -225,8 +239,12 @@ export default async function DashboardPage() {
                         </span>
                       </div>
                       <h1 className="text-[32px] tracking-tight m-0 leading-tight">
-                        <span className="font-bold">Hola {sponsor.contactInfo?.fullName?.split(' ')[0] || 'Sponsor'},</span>{' '}
-                        <span className="text-muted-foreground font-bold">{sponsor.companyName}</span>
+                        <span className="font-bold">
+                          Hola {sponsor.contactInfo?.fullName?.split(' ')[0] || 'Sponsor'},
+                        </span>{' '}
+                        <span className="text-muted-foreground font-bold">
+                          {sponsor.companyName}
+                        </span>
                       </h1>
                       <p className="text-muted-foreground mt-3 text-[15px] max-w-2xl leading-relaxed">
                         Tu patrocinio en{' '}
@@ -369,6 +387,144 @@ export default async function DashboardPage() {
                       </Link>
                     </div>
 
+                    {/* PRÓXIMOS PASOS */}
+                    {(() => {
+                      const nextPendingDeliverable = deliverables.find(
+                        (d: any) => d.status === 'pending' || d.status === 'overdue',
+                      )
+                      const meetingToSchedule = meetings.find(
+                        (m: any) => m.status !== 'completed' && !m.scheduledDate && m.calendlyLink,
+                      )
+                      const meetingScheduled = meetings.find(
+                        (m: any) =>
+                          m.status !== 'completed' &&
+                          m.scheduledDate &&
+                          new Date(m.scheduledDate).getTime() >= nowTime,
+                      )
+                      const nextActionMeeting = meetingToSchedule || meetingScheduled || null
+
+                      if (!nextActionMeeting && !nextPendingDeliverable) return null
+
+                      return (
+                        <div className="rounded-xl bg-card border shadow-sm p-6">
+                          <div className="text-xl font-bold tracking-tight mb-1">
+                            Próximos pasos
+                          </div>
+                          <div className="text-sm text-muted-foreground mb-5">
+                            Acciones pendientes para mantener tu patrocinio al día.
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Próxima reunión */}
+                            {nextActionMeeting ? (
+                              <div className="flex items-start gap-4 p-4 rounded-lg border border-border/60 bg-background">
+                                <div className="w-10 h-10 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+                                  <VideoIcon className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+                                    Reunión
+                                  </div>
+                                  <div className="text-[14px] font-semibold text-foreground truncate leading-tight">
+                                    {nextActionMeeting.name}
+                                  </div>
+                                  <div className="text-[12px] text-muted-foreground mt-1">
+                                    {nextActionMeeting.scheduledDate
+                                      ? new Date(nextActionMeeting.scheduledDate).toLocaleDateString(
+                                          'es-ES',
+                                          {
+                                            weekday: 'short',
+                                            day: 'numeric',
+                                            month: 'short',
+                                            timeZone: 'UTC',
+                                          },
+                                        )
+                                      : nextActionMeeting.projectedMonth || 'Fecha por definir'}
+                                  </div>
+                                  <div className="mt-3">
+                                    <Link href="/dashboard/reuniones">
+                                      <Button
+                                        size="sm"
+                                        variant={nextActionMeeting.scheduledDate ? 'default' : 'outline'}
+                                        className="h-8 text-xs font-medium"
+                                      >
+                                        {nextActionMeeting.scheduledDate ? (
+                                          <>
+                                            <VideoIcon className="w-3.5 h-3.5 mr-1.5" /> Ver reunión
+                                          </>
+                                        ) : (
+                                          <>
+                                            <CalendarDaysIcon className="w-3.5 h-3.5 mr-1.5" /> Agendar
+                                          </>
+                                        )}
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-4 p-4 rounded-lg border border-dashed border-border/60 bg-muted/20">
+                                <div className="w-10 h-10 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+                                  <VideoIcon className="w-5 h-5 text-muted-foreground/50" />
+                                </div>
+                                <div className="text-[13px] text-muted-foreground">
+                                  No hay reuniones pendientes por ahora.
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Próximo entregable */}
+                            {nextPendingDeliverable ? (
+                              <div className="flex items-start gap-4 p-4 rounded-lg border border-border/60 bg-background">
+                                <div className="w-10 h-10 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+                                  {nextPendingDeliverable.type === 'image' ? (
+                                    <ImageIcon className="w-5 h-5 text-muted-foreground" />
+                                  ) : nextPendingDeliverable.type === 'link' ? (
+                                    <LinkIcon className="w-5 h-5 text-muted-foreground" />
+                                  ) : (
+                                    <FileTextIcon className="w-5 h-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-[11px] uppercase tracking-widest text-muted-foreground font-medium mb-1">
+                                    Entregable
+                                  </div>
+                                  <div className="text-[14px] font-semibold text-foreground truncate leading-tight">
+                                    {nextPendingDeliverable.itemName}
+                                  </div>
+                                  <div className="text-[12px] text-muted-foreground mt-1">
+                                    {nextPendingDeliverable.dueDate
+                                      ? `Vence ${new Date(nextPendingDeliverable.dueDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`
+                                      : 'Sin fecha límite'}
+                                  </div>
+                                  <div className="mt-3">
+                                    <Link href="/dashboard/entregables">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        className="h-8 text-xs font-medium"
+                                      >
+                                        <ArrowRightIcon className="w-3.5 h-3.5 mr-1.5" /> Ir a entregables
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-4 p-4 rounded-lg border border-dashed border-border/60 bg-muted/20">
+                                <div className="w-10 h-10 rounded-lg bg-muted/40 border border-border/50 flex items-center justify-center shrink-0">
+                                  <FileTextIcon className="w-5 h-5 text-muted-foreground/50" />
+                                </div>
+                                <div className="text-[13px] text-muted-foreground">
+                                  No hay entregables pendientes por ahora.
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })()}
+
                     {/* SECCIÓN 2 COLUMNAS (Hoja de ruta + Detalle Reunión) */}
                     <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4">
                       {/* COLUMNA IZQ: Hoja de Ruta */}
@@ -379,10 +535,14 @@ export default async function DashboardPage() {
                               Ejecución de beneficios
                             </div>
                             <div className="text-[13px] text-muted-foreground mt-1">
-                              {moments.length} agrupaciones · Ejecutando <span className="font-medium text-foreground">{currentPhase}</span>
+                              {moments.length} agrupaciones · Ejecutando{' '}
+                              <span className="font-medium text-foreground">{currentPhase}</span>
                             </div>
                           </div>
-                          <Link href="/dashboard/entregables" className="text-[13px] font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors">
+                          <Link
+                            href="/dashboard/entregables"
+                            className="text-[13px] font-medium flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                          >
                             Ver entregables <ArrowRightIcon className="w-3.5 h-3.5" />
                           </Link>
                         </div>
@@ -390,51 +550,53 @@ export default async function DashboardPage() {
                         <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-muted">
                           <div className="relative flex justify-between w-full min-w-[500px] mt-4 pb-2 px-1">
                             {/* Línea conectora */}
-                            <div 
-                              className="absolute top-[11px] h-[1px] bg-border z-0" 
-                              style={{ 
-                                left: `calc(100% / ${moments.length * 2})`, 
-                                right: `calc(100% / ${moments.length * 2})` 
-                              }} 
+                            <div
+                              className="absolute top-[11px] h-[1px] bg-border z-0"
+                              style={{
+                                left: `calc(100% / ${moments.length * 2})`,
+                                right: `calc(100% / ${moments.length * 2})`,
+                              }}
                             />
 
                             {moments.map((m) => {
-                            const isCompleted = m.status === 'completed'
-                            const isActive = m.status === 'active'
-                            const isLocked = m.status === 'locked'
+                              const isCompleted = m.status === 'completed'
+                              const isActive = m.status === 'active'
+                              const isLocked = m.status === 'locked'
 
-                            return (
-                              <div
-                                key={m.id}
-                                className="flex flex-col items-center text-center relative z-10 flex-1 px-1"
-                              >
+                              return (
                                 <div
-                                  className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center mb-3 transition-colors ${
-                                    isCompleted
-                                      ? 'bg-zinc-900 dark:bg-zinc-100 border-2 border-zinc-900 dark:border-zinc-100 text-white dark:text-zinc-900 shadow-sm'
-                                      : isActive
-                                        ? 'bg-background border-[1.5px] border-zinc-900 dark:border-zinc-100 shadow-sm'
-                                        : isLocked
-                                          ? 'bg-muted/50 border-[1.5px] border-muted-foreground/20'
-                                          : 'bg-card border-[1.5px] border-border'
-                                  }`}
+                                  key={m.id}
+                                  className="flex flex-col items-center text-center relative z-10 flex-1 px-1"
                                 >
-                                  {isCompleted && <CheckIcon className="w-3.5 h-3.5 text-background" />}
-                                  {isActive && (
-                                    <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
-                                  )}
+                                  <div
+                                    className={`w-6 h-6 mx-auto rounded-full flex items-center justify-center mb-3 transition-colors ${
+                                      isCompleted
+                                        ? 'bg-zinc-900 dark:bg-zinc-100 border-2 border-zinc-900 dark:border-zinc-100 text-white dark:text-zinc-900 shadow-sm'
+                                        : isActive
+                                          ? 'bg-background border-[1.5px] border-zinc-900 dark:border-zinc-100 shadow-sm'
+                                          : isLocked
+                                            ? 'bg-muted/50 border-[1.5px] border-muted-foreground/20'
+                                            : 'bg-card border-[1.5px] border-border'
+                                    }`}
+                                  >
+                                    {isCompleted && (
+                                      <CheckIcon className="w-3.5 h-3.5 text-background" />
+                                    )}
+                                    {isActive && (
+                                      <div className="w-2.5 h-2.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
+                                    )}
+                                  </div>
+                                  <div
+                                    className={`text-[12.5px] font-semibold tracking-tight leading-tight ${isLocked ? 'text-muted-foreground' : 'text-foreground'}`}
+                                  >
+                                    {m.title}
+                                  </div>
+                                  <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 px-1">
+                                    {m.subtitle}
+                                  </div>
                                 </div>
-                                <div
-                                  className={`text-[12.5px] font-semibold tracking-tight leading-tight ${isLocked ? 'text-muted-foreground' : 'text-foreground'}`}
-                                >
-                                  {m.title}
-                                </div>
-                                <div className="text-[11px] text-muted-foreground mt-0.5 line-clamp-1 px-1">
-                                  {m.subtitle}
-                                </div>
-                              </div>
-                            )
-                          })}
+                              )
+                            })}
                           </div>
                         </div>
                       </div>
@@ -445,7 +607,10 @@ export default async function DashboardPage() {
                           <div className="text-[15px] font-semibold tracking-tight">
                             Próxima sesión
                           </div>
-                          <Badge variant="outline" className="font-normal text-[11px] h-6 px-2 border-border shadow-sm bg-background">
+                          <Badge
+                            variant="outline"
+                            className="font-normal text-[11px] h-6 px-2 border-border shadow-sm bg-background"
+                          >
                             <VideoIcon className="w-3.5 h-3.5 mr-1.5 opacity-70" /> Videollamada
                           </Badge>
                         </div>
@@ -479,22 +644,39 @@ export default async function DashboardPage() {
                                 </span>
                               </div>
                             </div>
-                            
+
                             <div className="mt-4 pt-1">
                               {nextMeeting.platform ? (
-                                <a href={nextMeeting.platform} target="_blank" rel="noopener noreferrer" className="block">
+                                <a
+                                  href={nextMeeting.platform}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
                                   <Button className="w-full font-semibold shadow-sm h-10 bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200">
                                     <VideoIcon className="w-4 h-4 mr-2" /> Entrar a la reunión
                                   </Button>
                                 </a>
                               ) : nextMeeting.calendlyLink ? (
-                                <a href={nextMeeting.calendlyLink} target="_blank" rel="noopener noreferrer" className="block">
-                                  <Button variant="outline" className="w-full font-semibold shadow-sm h-10">
+                                <a
+                                  href={nextMeeting.calendlyLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block"
+                                >
+                                  <Button
+                                    variant="outline"
+                                    className="w-full font-semibold shadow-sm h-10"
+                                  >
                                     <CalendarDaysIcon className="w-4 h-4 mr-2" /> Agendar sesión
                                   </Button>
                                 </a>
                               ) : (
-                                <Button disabled variant="outline" className="w-full font-medium h-10 text-muted-foreground border-dashed">
+                                <Button
+                                  disabled
+                                  variant="outline"
+                                  className="w-full font-medium h-10 text-muted-foreground border-dashed"
+                                >
                                   Sin enlace disponible
                                 </Button>
                               )}

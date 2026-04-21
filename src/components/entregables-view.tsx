@@ -40,6 +40,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
   const [fileInputs, setFileInputs] = useState<Record<string, File | null>>({})
   const [textInputs, setTextInputs] = useState<Record<string, string>>({})
   const [linkInputs, setLinkInputs] = useState<Record<string, string>>({})
+  const [visitedLinks, setVisitedLinks] = useState<Record<string, boolean>>({})
 
   // Estado para controlar qué evidencia se está viendo en el modal
   const [evidenceItem, setEvidenceItem] = useState<any | null>(null)
@@ -55,16 +56,17 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
     )
   }
 
-  const meetings = activeParticipation.meetings || []
-  const firstMeeting = meetings.length > 0 ? meetings[0] : null
-  const isFirstMeetingReady = firstMeeting
-    ? firstMeeting.status === 'completed' || firstMeeting.status === 'scheduled'
-    : true
-
   const plan = activeParticipation.plan
   const benefits = plan.benefits || []
   const participationDeliverables = activeParticipation.deliverables || []
   const participationItems = activeParticipation.benefitItems || []
+
+  // Validar si los logos obligatorios están completados
+  const logoDeliverables = participationDeliverables.filter((d: any) =>
+    d.itemName.toLowerCase().includes('logo'),
+  )
+  const isLogoCompleted =
+    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
 
   const handleSubmitDeliverable = async (
     deliverableId: string,
@@ -123,8 +125,22 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
 
       if (!updateRes.ok) throw new Error('Error actualizando la base de datos')
 
+      // Verificamos si este post-submit completó el requerimiento de logo
+      const updatedLogoDeliverables = currentPart.deliverables.filter((d: any) =>
+        d.itemName.toLowerCase().includes('logo'),
+      )
+      const isNowLogoCompleted =
+        updatedLogoDeliverables.length === 0 ||
+        updatedLogoDeliverables.every((d: any) => d.status === 'completed')
+
       setExpandedDeliverable(null)
-      router.refresh()
+
+      if (!isLogoCompleted && isNowLogoCompleted) {
+        router.push('/dashboard')
+        router.refresh()
+      } else {
+        router.refresh()
+      }
     } catch (error) {
       console.error(error)
       alert('Hubo un error al guardar el entregable. Revise la consola.')
@@ -150,7 +166,9 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
       (item: any) => item.benefitCategory === categoryName,
     )
 
-    const isBlockUnlocked = isFirstMeetingReady && localIsPreviousComplete
+    const isBlockUnlocked = !isLogoCompleted
+      ? blockDeliverables.some((d: any) => d.itemName.toLowerCase().includes('logo'))
+      : localIsPreviousComplete
 
     // Verificamos estatus de los items para desbloquear el siguiente bloque
     const isCurrentBlockComplete =
@@ -181,72 +199,74 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
   return (
     <>
       <div className="space-y-8 pb-10">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
-            Progreso y entregables
-          </h1>
-          <p className="text-muted-foreground mt-2 text-[15px]">
-            Completa los requerimientos para desbloquear la ejecución de tus beneficios.
-          </p>
-        </div>
+        {isLogoCompleted && (
+          <>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+                Progreso y entregables
+              </h1>
+              <p className="text-muted-foreground mt-2 text-[15px]">
+                Completa los requerimientos para desbloquear la ejecución de tus beneficios.
+              </p>
+            </div>
 
-        {/* 4 CARDS SUPERIORES */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-          <Card className="shadow-sm border-border/80 rounded-[14px]">
-            <CardContent className="p-5 flex flex-col gap-1">
-              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
-                Total
-              </span>
-              <span className="text-3xl font-bold text-foreground">{totalDeliverablesCount}</span>
-              <span className="text-xs text-muted-foreground/90 font-medium">
-                Entregables del plan
-              </span>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-border/80 rounded-[14px]">
-            <CardContent className="p-5 flex flex-col gap-1">
-              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
-                Completados
-              </span>
-              <span className="text-3xl font-bold text-foreground">
-                {completedDeliverablesCount}
-              </span>
-              <span className="text-xs text-muted-foreground/90 font-medium">
-                {completedPercent}% del total
-              </span>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-border/80 rounded-[14px]">
-            <CardContent className="p-5 flex flex-col gap-1">
-              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
-                Pendientes
-              </span>
-              <span className="text-3xl font-bold text-foreground">{pendingDeliverablesCount}</span>
-              <span className="text-xs text-muted-foreground/90 font-medium">Requieren acción</span>
-            </CardContent>
-          </Card>
-          <Card className="shadow-sm border-border/80 rounded-[14px]">
-            <CardContent className="p-5 flex flex-col gap-1">
-              <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
-                Bloqueados
-              </span>
-              <span className="text-3xl font-bold text-foreground">{blockedDeliverablesCount}</span>
-              <span className="text-xs text-muted-foreground/90 font-medium">
-                Se desbloquean proximamente
-              </span>
-            </CardContent>
-          </Card>
-        </div>
+            {/* 4 CARDS SUPERIORES */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+              <Card className="shadow-sm border-border/80 rounded-[14px]">
+                <CardContent className="p-5 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                    Total
+                  </span>
+                  <span className="text-3xl font-bold text-foreground">{totalDeliverablesCount}</span>
+                  <span className="text-xs text-muted-foreground/90 font-medium">
+                    Entregables del plan
+                  </span>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-border/80 rounded-[14px]">
+                <CardContent className="p-5 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                    Completados
+                  </span>
+                  <span className="text-3xl font-bold text-foreground">
+                    {completedDeliverablesCount}
+                  </span>
+                  <span className="text-xs text-muted-foreground/90 font-medium">
+                    {completedPercent}% del total
+                  </span>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-border/80 rounded-[14px]">
+                <CardContent className="p-5 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                    Pendientes
+                  </span>
+                  <span className="text-3xl font-bold text-foreground">{pendingDeliverablesCount}</span>
+                  <span className="text-xs text-muted-foreground/90 font-medium">Requieren acción</span>
+                </CardContent>
+              </Card>
+              <Card className="shadow-sm border-border/80 rounded-[14px]">
+                <CardContent className="p-5 flex flex-col gap-1">
+                  <span className="text-xs font-semibold text-muted-foreground/80 tracking-wide pb-1">
+                    Bloqueados
+                  </span>
+                  <span className="text-3xl font-bold text-foreground">{blockedDeliverablesCount}</span>
+                  <span className="text-xs text-muted-foreground/90 font-medium">
+                    Se desbloquean proximamente
+                  </span>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
 
-        {!isFirstMeetingReady && firstMeeting && (
-          <div className="bg-primary/10 border border-primary/20 text-primary px-6 py-4 rounded-xl flex items-start gap-4">
+        {!isLogoCompleted && (
+          <div className="bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-400 px-6 py-4 rounded-xl flex items-start gap-4">
             <AlertCircleIcon className="w-6 h-6 shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-lg">Entregables Bloqueados</h3>
+              <h3 className="font-semibold text-lg">Formatos de Logo Requeridos</h3>
               <p className="text-sm mt-1 opacity-90">
-                Cuando hayas <strong>agendado</strong> la reunión{' '}
-                <strong>"{firstMeeting.name}"</strong> se habilitarán los primeros entregables para
-                que puedas comenzar a subir tu material.
+                Completa la entrega de los logos faltantes para desbloquear todos los beneficios de tu plan y acceder al dashboard completo. Todo lo demás se mantendrá bloqueado hasta completar esta acción.
               </p>
             </div>
           </div>
@@ -262,7 +282,9 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
               (item: any) => item.benefitCategory === categoryName,
             )
 
-            const isBlockUnlocked = isFirstMeetingReady && isPreviousBlockCompletedMap
+            const isBlockUnlocked = !isLogoCompleted
+              ? blockDeliverables.some((d: any) => d.itemName.toLowerCase().includes('logo'))
+              : isPreviousBlockCompletedMap
             const isCurrentBlockCompleted =
               blockItems.length > 0 && blockItems.every((item: any) => item.status === 'completed')
 
@@ -330,6 +352,10 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                           {blockDeliverables.map((deliv: any, dIndex: number) => {
                             const isPending =
                               deliv.status === 'pending' || deliv.status === 'overdue'
+                              
+                            const isDeliverableUnlocked = isLogoCompleted
+                              ? isBlockUnlocked
+                              : deliv.itemName.toLowerCase().includes('logo')
 
                             return (
                               <div key={deliv.id || dIndex}>
@@ -369,6 +395,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                         {deliv.type !== 'direct' && (
                                           <Button
                                             className="bg-primary text-primary-foreground h-7 text-xs px-4"
+                                            disabled={!isDeliverableUnlocked}
                                             onClick={() =>
                                               setExpandedDeliverable(
                                                 expandedDeliverable === deliv.id ? null : deliv.id,
@@ -377,7 +404,11 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                           >
                                             {expandedDeliverable === deliv.id
                                               ? 'Cancelar'
-                                              : 'Enviar'}
+                                              : deliv.type === 'action_link'
+                                                ? 'Ver Acción'
+                                                : !isDeliverableUnlocked
+                                                  ? 'Bloqueado'
+                                                  : 'Enviar'}
                                           </Button>
                                         )}
                                       </div>
@@ -392,7 +423,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                             <Input
                                               type="file"
                                               className="bg-white"
-                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              disabled={!isDeliverableUnlocked || loadingId === deliv.id}
                                               onChange={(e) =>
                                                 setFileInputs({
                                                   ...fileInputs,
@@ -405,7 +436,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                             <Textarea
                                               placeholder="Ingrese la información solicitada aquí..."
                                               className="min-h-[80px] bg-white"
-                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              disabled={!isDeliverableUnlocked || loadingId === deliv.id}
                                               onChange={(e) =>
                                                 setTextInputs({
                                                   ...textInputs,
@@ -419,7 +450,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                               type="url"
                                               placeholder="https://ejemplo.com"
                                               className="bg-white"
-                                              disabled={!isBlockUnlocked || loadingId === deliv.id}
+                                              disabled={!isDeliverableUnlocked || loadingId === deliv.id}
                                               onChange={(e) =>
                                                 setLinkInputs({
                                                   ...linkInputs,
@@ -428,10 +459,45 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                               }
                                             />
                                           )}
+                                          {deliv.type === 'action_link' && (
+                                            <div className="flex flex-col gap-4 bg-white p-4 border border-border/80 rounded-md">
+                                              <p className="text-[13.5px] font-medium text-zinc-900">
+                                                Por favor, realiza la acción en el siguiente enlace:
+                                              </p>
+                                              <Button 
+                                                asChild 
+                                                variant="outline" 
+                                                className="w-fit"
+                                                onClick={() => setVisitedLinks({ ...visitedLinks, [deliv.id]: true })}
+                                              >
+                                                <a href={deliv.actionUrl} target="_blank" rel="noopener noreferrer">
+                                                  Abrir Enlace <ExternalLinkIcon className="w-4 h-4 ml-2 mt-0.5 text-muted-foreground" />
+                                                </a>
+                                              </Button>
+                                              
+                                              {visitedLinks[deliv.id] && (
+                                                <div className="flex items-center space-x-3 bg-muted/30 p-3 rounded-md animate-in fade-in slide-in-from-top-1 mt-2">
+                                                  <input 
+                                                    type="checkbox"
+                                                    id={`check-${deliv.id}`} 
+                                                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary shadow-sm"
+                                                    checked={!!textInputs[`checked-${deliv.id}`]}
+                                                    onChange={(e) => setTextInputs({...textInputs, [`checked-${deliv.id}`]: e.target.checked ? 'yes' : ''})}
+                                                  />
+                                                  <Label htmlFor={`check-${deliv.id}`} className="text-[13.5px] font-medium leading-none cursor-pointer">
+                                                    Confirmo que ya completé la acción
+                                                  </Label>
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                         <Button
-                                          className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90"
-                                          disabled={loadingId === deliv.id}
+                                          className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 mt-2 md:mt-0"
+                                          disabled={
+                                            loadingId === deliv.id ||
+                                            (deliv.type === 'action_link' && !textInputs[`checked-${deliv.id}`])
+                                          }
                                           onClick={() =>
                                             handleSubmitDeliverable(
                                               deliv.id,
@@ -442,6 +508,8 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                         >
                                           {loadingId === deliv.id ? (
                                             <Loader2Icon className="w-4 h-4 animate-spin mr-2" />
+                                          ) : deliv.type === 'action_link' ? (
+                                            'Confirmar Acción'
                                           ) : (
                                             'Confirmar Envío'
                                           )}

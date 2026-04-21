@@ -29,6 +29,14 @@ export function AppSidebar({
   const sponsorEmail = sponsor?.contactInfo?.corporateEmail || 'correo@empresa.com'
   const sponsorLogoUrl = typeof sponsor?.logo === 'object' ? sponsor?.logo?.url : ''
 
+  const activeParticipation = sponsor?.eventParticipations?.find((p: any) => p.isCurrent)
+  const deliverables = activeParticipation?.deliverables || []
+  const logoDeliverables = deliverables.filter((d: any) =>
+    d.itemName.toLowerCase().includes('logo'),
+  )
+  const isLogoCompleted =
+    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
+
   const data = {
     user: {
       name: sponsorName,
@@ -36,12 +44,12 @@ export function AppSidebar({
       avatar: sponsorLogoUrl,
     },
     navMain: [
-      { title: 'Dashboard', url: '/dashboard', icon: <LayoutDashboardIcon /> },
-      { title: 'Entregables', url: '/dashboard/entregables', icon: <CheckSquareIcon /> },
-      { title: 'Reuniones', url: '/dashboard/reuniones', icon: <CalendarDaysIcon /> },
-      { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon /> },
-      { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon /> },
-      { title: 'Documentos', url: '/dashboard/documentos', icon: <FileTextIcon /> },
+      { title: 'Dashboard', url: '/dashboard', icon: <LayoutDashboardIcon />, locked: !isLogoCompleted },
+      { title: 'Entregables', url: '/dashboard/entregables', icon: <CheckSquareIcon />, locked: false },
+      { title: 'Reuniones', url: '/dashboard/reuniones', icon: <CalendarDaysIcon />, locked: !isLogoCompleted },
+      { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
+      { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon />, locked: !isLogoCompleted },
+      { title: 'Documentos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
     ],
   }
 

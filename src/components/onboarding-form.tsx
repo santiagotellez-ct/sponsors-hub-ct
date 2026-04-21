@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2 } from 'lucide-react'
+import { Loader2, CheckCircle2 } from 'lucide-react'
 
 export function OnboardingForm({ sponsor }: { sponsor: any }) {
   const router = useRouter()
@@ -103,6 +103,7 @@ export function OnboardingForm({ sponsor }: { sponsor: any }) {
       }
 
       // Si todo sale bien, recargamos la página para que el Server Component renderice el Dashboard real
+      router.push('/dashboard/entregables')
       router.refresh()
     } catch (err: any) {
       setError(err.message)
@@ -115,15 +116,27 @@ export function OnboardingForm({ sponsor }: { sponsor: any }) {
       {/* SECCIÓN: LOGO */}
       <div className="space-y-4">
         <h3 className="text-lg font-medium border-b pb-2">1. Identidad Visual</h3>
+        <p className="text-[13.5px] text-muted-foreground italic mb-2">
+          Luego tendrás que subir el logo en otros formatos para desbloquear los beneficios de tu plan.
+        </p>
         <div className="grid gap-2">
           <Label htmlFor="logo">Logo de la empresa</Label>
-          <Input
-            id="logo"
-            type="file"
-            accept="image/*"
-            onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-            required={!sponsor?.logo}
-          />
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <Input
+              id="logo"
+              type="file"
+              accept="image/*"
+              className="max-w-[300px]"
+              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+              required={!sponsor?.logo}
+            />
+            {(logoFile || sponsor?.logo) && (
+              <div className="flex items-center text-[13px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-md w-fit">
+                <CheckCircle2 className="w-4 h-4 mr-1.5" />
+                <span>{logoFile ? 'Archivo seleccionado' : 'Logo ya cargado'}</span>
+              </div>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
             Formato recomendado: PNG o SVG transparente.
           </p>
@@ -164,7 +177,7 @@ export function OnboardingForm({ sponsor }: { sponsor: any }) {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="linkedin">URL de LinkedIn (Empresa o Contacto)</Label>
+            <Label htmlFor="linkedin">URL de LinkedIn (Empresa)</Label>
             <Input
               id="linkedin"
               type="url"
@@ -238,7 +251,7 @@ export function OnboardingForm({ sponsor }: { sponsor: any }) {
               Guardando información...
             </>
           ) : (
-            'Completar perfil y entrar'
+            'Completar perfil'
           )}
         </Button>
       </div>

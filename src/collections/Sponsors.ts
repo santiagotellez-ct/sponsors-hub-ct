@@ -238,7 +238,13 @@ export const Sponsors: CollectionConfig = {
             {
               name: 'type',
               type: 'select',
-              options: ['document', 'image', 'text', 'link', 'direct'],
+              options: ['document', 'image', 'text', 'link', 'direct', 'action_link'],
+              admin: { readOnly: true },
+            },
+            {
+              name: 'actionUrl',
+              type: 'text',
+              label: 'URL de la Acción Externa',
               admin: { readOnly: true },
             },
             {
@@ -707,6 +713,7 @@ export const Sponsors: CollectionConfig = {
                         benefitCategory: benefit.benefitName,
                         itemName: deliv.deliverableName,
                         type: deliv.type,
+                        actionUrl: deliv.actionUrl,
                         dueDate: deliv.dueDate,
                         status: 'pending',
                       })

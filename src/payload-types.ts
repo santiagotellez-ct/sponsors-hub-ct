@@ -244,7 +244,8 @@ export interface Sponsor {
           | {
               benefitCategory?: string | null;
               itemName?: string | null;
-              type?: ('document' | 'image' | 'text' | 'link' | 'direct') | null;
+              type?: ('document' | 'image' | 'text' | 'link' | 'direct' | 'action_link') | null;
+              actionUrl?: string | null;
               status?: ('pending' | 'completed' | 'overdue') | null;
               dueDate?: string | null;
               uploadedFile?: (number | null) | Media;
@@ -364,7 +365,8 @@ export interface Plan {
         deliverables?:
           | {
               deliverableName: string;
-              type: 'document' | 'image' | 'text' | 'link' | 'direct';
+              type: 'document' | 'image' | 'text' | 'link' | 'direct' | 'action_link';
+              actionUrl?: string | null;
               dueDate: string;
               id?: string | null;
             }[]
@@ -580,6 +582,7 @@ export interface SponsorsSelect<T extends boolean = true> {
               benefitCategory?: T;
               itemName?: T;
               type?: T;
+              actionUrl?: T;
               status?: T;
               dueDate?: T;
               uploadedFile?: T;
@@ -688,6 +691,7 @@ export interface PlansSelect<T extends boolean = true> {
           | {
               deliverableName?: T;
               type?: T;
+              actionUrl?: T;
               dueDate?: T;
               id?: T;
             };
