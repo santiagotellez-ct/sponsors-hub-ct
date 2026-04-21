@@ -452,6 +452,27 @@ export const Sponsors: CollectionConfig = {
                 .map((p: any) => (typeof p.plan === 'object' ? p.plan?.name : p.plan))
                 .filter(Boolean)
 
+              // ---> SOLUCIÓN DEFINITIVA (Soporte para Postgres Numeric IDs)
+              let finalLogoUrl = null
+              if (doc.logo) {
+                if (typeof doc.logo === 'object' && doc.logo.url) {
+                  finalLogoUrl = `https://sponsors-hub-ct.vercel.app${doc.logo.url}`
+                } else {
+                  // Si es string o number (Postgres), buscamos en la colección
+                  try {
+                    const logoDoc = await req.payload.findByID({
+                      collection: 'media',
+                      id: doc.logo,
+                    })
+                    if (logoDoc && logoDoc.url) {
+                      finalLogoUrl = `https://sponsors-hub-ct.vercel.app${logoDoc.url}`
+                    }
+                  } catch (err) {
+                    console.error('Error buscando el logo de la empresa:', err)
+                  }
+                }
+              }
+
               const payloadToN8n = {
                 sponsorId: doc.id,
                 companyName: doc.companyName,
@@ -466,8 +487,8 @@ export const Sponsors: CollectionConfig = {
                 strategyObjectives: activeParticipation?.strategy?.eventObjectives || 'Sin definir',
                 strategyDifferentiator:
                   activeParticipation?.strategy?.brandDifferentiator || 'Sin definir',
-                // Construimos la URL pública del logo apuntando a Vercel
-                logoUrl: doc.logo?.url ? `https://sponsors-hub-ct.vercel.app${doc.logo.url}` : null,
+                // Usamos la URL que acabamos de rescatar
+                logoUrl: finalLogoUrl,
               }
 
               // Disparamos el webhook con await para no bloquear Vercel
@@ -482,6 +503,8 @@ export const Sponsors: CollectionConfig = {
               console.log('Error enviando webhook a n8n, pero el sponsor fue guardado.', error)
             }
           }
+
+          // OTRO WEBHOOK
 
           const webhookReunionesUrl = process.env.N8N_WEBHOOK_REUNIONES_URL
           if (webhookReunionesUrl) {
