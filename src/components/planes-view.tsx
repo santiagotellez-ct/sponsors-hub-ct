@@ -25,13 +25,25 @@ export function PlanesView({ sponsor }: { sponsor: any }) {
   if (selectedParticipation) {
     const event = selectedParticipation.event
     const plan = selectedParticipation.plan
-    const benefits = plan?.benefits || []
+    const planBenefits = plan?.benefits || []
     const bgImageUrl = event?.backgroundImage?.url
     const isActive = selectedParticipation.isCurrent
 
     const startDate = event?.startDate ? new Date(event.startDate) : null
     const endDate = event?.endDate ? new Date(event.endDate) : null
-    const benefitCount = benefits.length
+
+    const visibleBenefitItems = selectedParticipation.benefitItems || []
+    const visibleDeliverables = selectedParticipation.deliverables || []
+    const planBenefitNames = planBenefits.map((b: any) => b.benefitName)
+    const allUsedCats = [...new Set([
+      ...visibleBenefitItems.map((i: any) => i.benefitCategory),
+      ...visibleDeliverables.map((d: any) => d.benefitCategory),
+    ])] as string[]
+    const orderedCategories = [...new Set([
+      ...planBenefitNames.filter((name: string) => allUsedCats.includes(name)),
+      ...allUsedCats.filter((cat: string) => !planBenefitNames.includes(cat)),
+    ])]
+    const benefitCount = orderedCategories.length
 
     const dateText = startDate
       ? `${startDate.getDate()}${endDate && endDate.getTime() !== startDate.getTime() ? ` \u2014 ${endDate.getDate()}` : ''} ${startDate.toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + startDate.toLocaleDateString('es-ES', { month: 'long' }).slice(1)}, ${startDate.getFullYear()}`
@@ -108,19 +120,19 @@ export function PlanesView({ sponsor }: { sponsor: any }) {
         <div>
           <h2 className="text-[17px] font-bold text-zinc-900 mb-4">Beneficios incluidos</h2>
 
-          {benefits.length > 0 ? (
+          {orderedCategories.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
-              {benefits.map((benefit: any, index: number) => {
-                const items = benefit.items || []
+              {orderedCategories.map((categoryName: string, index: number) => {
+                const items = visibleBenefitItems.filter((i: any) => i.benefitCategory === categoryName)
                 return (
                   <div
                     key={index}
                     className="border border-border/60 rounded-xl px-5 py-4 bg-white shadow-xs"
                   >
                     <div className="flex items-center justify-between mb-3">
-                      <h3 className="text-[14.5px] font-bold text-zinc-900">{benefit.benefitName}</h3>
+                      <h3 className="text-[14.5px] font-bold text-zinc-900">{categoryName}</h3>
                       <span className="text-[12px] text-muted-foreground font-medium">
-                        {items.length}/{items.length}
+                        {items.filter((i: any) => i.status === 'completed').length}/{items.length}
                       </span>
                     </div>
                     {items.length > 0 ? (
@@ -168,7 +180,13 @@ export function PlanesView({ sponsor }: { sponsor: any }) {
 
           const startDate = event?.startDate ? new Date(event.startDate) : null
           const endDate = event?.endDate ? new Date(event.endDate) : null
-          const benefitCount = plan?.benefits?.length || 0
+          const visibleBenefitItemsGrid = participation.benefitItems || []
+          const visibleDeliverablesGrid = participation.deliverables || []
+          const allCatsGrid = [...new Set([
+            ...visibleBenefitItemsGrid.map((i: any) => i.benefitCategory),
+            ...visibleDeliverablesGrid.map((d: any) => d.benefitCategory),
+          ])]
+          const benefitCount = allCatsGrid.length || plan?.benefits?.length || 0
 
           const dateText = startDate
             ? `${startDate.getDate()}${endDate && endDate.getTime() !== startDate.getTime() ? ` — ${endDate.getDate()}` : ''} ${startDate.toLocaleDateString('es-ES', { month: 'long' }).charAt(0).toUpperCase() + startDate.toLocaleDateString('es-ES', { month: 'long' }).slice(1)}, ${startDate.getFullYear()}`
