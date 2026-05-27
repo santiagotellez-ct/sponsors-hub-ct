@@ -5,6 +5,9 @@ export const Plans: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: 'Configuración',
+    components: {
+      beforeListTable: ['@/components/admin/DuplicatePlanButton#DuplicatePlanButton'],
+    },
   },
   fields: [
     {
