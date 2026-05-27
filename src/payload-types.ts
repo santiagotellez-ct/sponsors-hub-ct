@@ -73,6 +73,7 @@ export interface Config {
     sponsors: Sponsor;
     events: Event;
     plans: Plan;
+    forms: Form;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -85,6 +86,7 @@ export interface Config {
     sponsors: SponsorsSelect<false> | SponsorsSelect<true>;
     events: EventsSelect<false> | EventsSelect<true>;
     plans: PlansSelect<false> | PlansSelect<true>;
+    forms: FormsSelect<false> | FormsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -242,15 +244,49 @@ export interface Sponsor {
           | null;
         deliverables?:
           | {
+              /**
+               * Enlace estable con el plan. No editar.
+               */
+              planDeliverableId?: string | null;
               benefitCategory?: string | null;
               itemName?: string | null;
-              type?: ('document' | 'image' | 'text' | 'link' | 'direct' | 'action_link') | null;
+              type?: ('document' | 'image' | 'text' | 'link' | 'direct' | 'action_link' | 'formulario') | null;
               actionUrl?: string | null;
               status?: ('pending' | 'completed' | 'overdue') | null;
               dueDate?: string | null;
+              /**
+               * Opcional. Si se define, el entregable se habilita a partir de esta fecha. Sin fecha usa la lógica secuencial.
+               */
+              unlockDate?: string | null;
               uploadedFile?: (number | null) | Media;
               uploadedText?: string | null;
               uploadedLink?: string | null;
+              /**
+               * Ítems del beneficio que desbloquea este entregable.
+               */
+              relatedItemNames?:
+                | {
+                    [k: string]: unknown;
+                  }
+                | unknown[]
+                | string
+                | number
+                | boolean
+                | null;
+              /**
+               * Selecciona el formulario que debe completar el sponsor.
+               */
+              formId?: (number | null) | Form;
+              formResponse?:
+                | {
+                    [k: string]: unknown;
+                  }
+                | unknown[]
+                | string
+                | number
+                | boolean
+                | null;
+              source?: ('plan' | 'custom') | null;
               id?: string | null;
             }[]
           | null;
@@ -259,6 +295,10 @@ export interface Sponsor {
          */
         benefitItems?:
           | {
+              /**
+               * Enlace estable con el plan. No editar.
+               */
+              planBenefitItemId?: string | null;
               benefitCategory?: string | null;
               itemName?: string | null;
               status?: ('not_started' | 'in_progress' | 'completed') | null;
@@ -271,6 +311,7 @@ export interface Sponsor {
                     id?: string | null;
                   }[]
                 | null;
+              source?: ('plan' | 'custom') | null;
               id?: string | null;
             }[]
           | null;
@@ -362,18 +403,70 @@ export interface Plan {
     | {
         benefitName: string;
         hasDeliverable?: boolean | null;
+        /**
+         * Opcional. Si se define, todos los entregables de esta categoría se habilitan a partir de esta fecha. Cada entregable puede tener su propia fecha que sobreescribe esta.
+         */
+        unlockDate?: string | null;
         deliverables?:
           | {
               deliverableName: string;
-              type: 'document' | 'image' | 'text' | 'link' | 'direct' | 'action_link';
+              type: 'document' | 'image' | 'text' | 'link' | 'direct' | 'action_link' | 'formulario';
               actionUrl?: string | null;
+              /**
+               * Selecciona el formulario que debe completar el sponsor.
+               */
+              formId?: (number | null) | Form;
               dueDate: string;
+              /**
+               * Opcional. Sobreescribe la fecha de la categoría para este entregable específico. Si no se define, se usa la de la categoría.
+               */
+              unlockDate?: string | null;
+              /**
+               * Selecciona los ítems del beneficio a los que aplica este entregable.
+               */
+              relatedItems?:
+                | {
+                    [k: string]: unknown;
+                  }
+                | unknown[]
+                | string
+                | number
+                | boolean
+                | null;
               id?: string | null;
             }[]
           | null;
         items?:
           | {
               itemName: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forms".
+ */
+export interface Form {
+  id: number;
+  title: string;
+  description?: string | null;
+  fields?:
+    | {
+        label: string;
+        fieldKey?: string | null;
+        type: 'text' | 'textarea' | 'number' | 'date' | 'select' | 'checkbox' | 'image' | 'link' | 'email';
+        required?: boolean | null;
+        placeholder?: string | null;
+        options?:
+          | {
+              optionLabel: string;
+              optionValue: string;
               id?: string | null;
             }[]
           | null;
@@ -426,6 +519,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'plans';
         value: number | Plan;
+      } | null)
+    | ({
+        relationTo: 'forms';
+        value: number | Form;
       } | null);
   globalSlug?: string | null;
   user:
@@ -579,20 +676,27 @@ export interface SponsorsSelect<T extends boolean = true> {
         deliverables?:
           | T
           | {
+              planDeliverableId?: T;
               benefitCategory?: T;
               itemName?: T;
               type?: T;
               actionUrl?: T;
               status?: T;
               dueDate?: T;
+              unlockDate?: T;
               uploadedFile?: T;
               uploadedText?: T;
               uploadedLink?: T;
+              relatedItemNames?: T;
+              formId?: T;
+              formResponse?: T;
+              source?: T;
               id?: T;
             };
         benefitItems?:
           | T
           | {
+              planBenefitItemId?: T;
               benefitCategory?: T;
               itemName?: T;
               status?: T;
@@ -605,6 +709,7 @@ export interface SponsorsSelect<T extends boolean = true> {
                     link?: T;
                     id?: T;
                   };
+              source?: T;
               id?: T;
             };
         id?: T;
@@ -686,19 +791,50 @@ export interface PlansSelect<T extends boolean = true> {
     | {
         benefitName?: T;
         hasDeliverable?: T;
+        unlockDate?: T;
         deliverables?:
           | T
           | {
               deliverableName?: T;
               type?: T;
               actionUrl?: T;
+              formId?: T;
               dueDate?: T;
+              unlockDate?: T;
+              relatedItems?: T;
               id?: T;
             };
         items?:
           | T
           | {
               itemName?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "forms_select".
+ */
+export interface FormsSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  fields?:
+    | T
+    | {
+        label?: T;
+        fieldKey?: T;
+        type?: T;
+        required?: T;
+        placeholder?: T;
+        options?:
+          | T
+          | {
+              optionLabel?: T;
+              optionValue?: T;
               id?: T;
             };
         id?: T;
