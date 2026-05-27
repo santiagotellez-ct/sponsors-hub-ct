@@ -47,7 +47,8 @@ export function AppSidebar({
       { title: 'Dashboard', url: '/dashboard', icon: <LayoutDashboardIcon />, locked: !isLogoCompleted },
       { title: 'Entregables', url: '/dashboard/entregables', icon: <CheckSquareIcon />, locked: false },
       { title: 'Reuniones', url: '/dashboard/reuniones', icon: <CalendarDaysIcon />, locked: !isLogoCompleted },
-      { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
+      // TODO: volver a habilitar cuando la sección de Calendario esté lista
+      // { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
       { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon />, locked: !isLogoCompleted },
       { title: 'Documentos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
     ],

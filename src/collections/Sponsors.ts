@@ -228,24 +228,18 @@ export const Sponsors: CollectionConfig = {
           type: 'array',
           label: 'Entregables (A subir por el Sponsor)',
           fields: [
-            {
-              name: 'benefitCategory',
-              type: 'text',
-              label: 'Categoría',
-              admin: { readOnly: true },
-            },
-            { name: 'itemName', type: 'text', label: 'Entregable', admin: { readOnly: true } },
+            { name: 'planDeliverableId', type: 'text', label: 'ID del entregable del plan', admin: { readOnly: true, description: 'Enlace estable con el plan. No editar.' } },
+            { name: 'benefitCategory', type: 'text', label: 'Categoría' },
+            { name: 'itemName', type: 'text', label: 'Entregable' },
             {
               name: 'type',
               type: 'select',
-              options: ['document', 'image', 'text', 'link', 'direct', 'action_link'],
-              admin: { readOnly: true },
+              options: ['document', 'image', 'text', 'link', 'direct', 'action_link', 'formulario'],
             },
             {
               name: 'actionUrl',
               type: 'text',
               label: 'URL de la Acción Externa',
-              admin: { readOnly: true },
             },
             {
               name: 'status',
@@ -258,10 +252,52 @@ export const Sponsors: CollectionConfig = {
               ],
               label: 'Estado',
             },
-            { name: 'dueDate', type: 'date', label: 'Fecha Máxima', admin: { readOnly: true } },
+            { name: 'dueDate', type: 'date', label: 'Fecha Máxima' },
+            {
+              name: 'unlockDate',
+              type: 'date',
+              label: 'Fecha de habilitación',
+              admin: {
+                description:
+                  'Opcional. Si se define, el entregable se habilita a partir de esta fecha. Sin fecha usa la lógica secuencial.',
+              },
+            },
             { name: 'uploadedFile', type: 'upload', relationTo: 'media', label: 'Archivo Subido' },
             { name: 'uploadedText', type: 'textarea', label: 'Texto Subido' },
             { name: 'uploadedLink', type: 'text', label: 'Link Subido' },
+            {
+              name: 'relatedItemNames',
+              type: 'json',
+              label: 'Ítems relacionados',
+              admin: {
+                description: 'Ítems del beneficio que desbloquea este entregable.',
+                components: {
+                  Field: '@/components/admin/SponsorRelatedItemsPicker#SponsorRelatedItemsPicker',
+                },
+              },
+            },
+            {
+              name: 'formId',
+              type: 'relationship',
+              relationTo: 'forms',
+              label: 'Formulario vinculado',
+              admin: {
+                condition: (_data, siblingData) => siblingData?.type === 'formulario',
+                description: 'Selecciona el formulario que debe completar el sponsor.',
+              },
+            },
+            {
+              name: 'formResponse',
+              type: 'json',
+              label: 'Respuestas del formulario',
+              admin: {
+                condition: (_data, siblingData) => siblingData?.type === 'formulario',
+                components: {
+                  Field: '@/components/admin/FormResponseViewer#FormResponseViewer',
+                },
+              },
+            },
+            { name: 'source', type: 'select', options: [{ label: 'Del Plan', value: 'plan' }, { label: 'Personalizado', value: 'custom' }], defaultValue: 'plan' },
           ],
         },
 
@@ -274,13 +310,9 @@ export const Sponsors: CollectionConfig = {
               'Ítems heredados del plan. Sube evidencias aquí para marcarlos como completados.',
           },
           fields: [
-            {
-              name: 'benefitCategory',
-              type: 'text',
-              label: 'Categoría',
-              admin: { readOnly: true },
-            },
-            { name: 'itemName', type: 'text', label: 'Ítem', admin: { readOnly: true } },
+            { name: 'planBenefitItemId', type: 'text', label: 'ID del ítem del plan', admin: { readOnly: true, description: 'Enlace estable con el plan. No editar.' } },
+            { name: 'benefitCategory', type: 'text', label: 'Categoría' },
+            { name: 'itemName', type: 'text', label: 'Ítem' },
             {
               name: 'status',
               type: 'select',
@@ -333,6 +365,7 @@ export const Sponsors: CollectionConfig = {
                 },
               ],
             },
+            { name: 'source', type: 'select', options: [{ label: 'Del Plan', value: 'plan' }, { label: 'Personalizado', value: 'custom' }], defaultValue: 'plan' },
           ],
         },
       ],
@@ -733,18 +766,31 @@ export const Sponsors: CollectionConfig = {
                   if (benefit.hasDeliverable && benefit.deliverables) {
                     benefit.deliverables.forEach((deliv: any) => {
                       newDeliverables.push({
+                        source: 'plan',
+                        planDeliverableId: deliv.id,
                         benefitCategory: benefit.benefitName,
                         itemName: deliv.deliverableName,
                         type: deliv.type,
                         actionUrl: deliv.actionUrl,
                         dueDate: deliv.dueDate,
                         status: 'pending',
+                        unlockDate: deliv.unlockDate ?? benefit.unlockDate ?? null,
+                        formId: deliv.formId
+                          ? typeof deliv.formId === 'object'
+                            ? deliv.formId.id
+                            : deliv.formId
+                          : null,
+                        relatedItemNames: (deliv.relatedItems || []).map((item: any) =>
+                          typeof item === 'string' ? item : item.itemName,
+                        ),
                       })
                     })
                   }
                   if (benefit.items) {
                     benefit.items.forEach((item: any) => {
                       newBenefitItems.push({
+                        source: 'plan',
+                        planBenefitItemId: item.id,
                         benefitCategory: benefit.benefitName,
                         itemName: item.itemName,
                         status: 'not_started',

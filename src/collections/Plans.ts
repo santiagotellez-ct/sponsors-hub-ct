@@ -37,11 +37,21 @@ export const Plans: CollectionConfig = {
           defaultValue: false,
         },
         {
+          name: 'unlockDate',
+          type: 'date',
+          label: 'Fecha de habilitación de la categoría',
+          admin: {
+            description:
+              'Opcional. Si se define, todos los entregables de esta categoría se habilitan a partir de esta fecha. Cada entregable puede tener su propia fecha que sobreescribe esta.',
+            condition: (_data, siblingData) => siblingData?.hasDeliverable === true,
+          },
+        },
+        {
           name: 'deliverables',
           type: 'array',
           label: 'Entregables Exigidos',
           admin: {
-            condition: (data, siblingData) => siblingData?.hasDeliverable === true,
+            condition: (_data, siblingData) => siblingData?.hasDeliverable === true,
           },
           fields: [
             {
@@ -62,6 +72,7 @@ export const Plans: CollectionConfig = {
                 { label: 'Enlace / URL', value: 'link' }, // NUEVO TIPO AGREGADO
                 { label: 'Comunicación Directa', value: 'direct' },
                 { label: 'Acción Externa (Link)', value: 'action_link' },
+                { label: 'Formulario', value: 'formulario' },
               ],
             },
             {
@@ -72,7 +83,37 @@ export const Plans: CollectionConfig = {
                 condition: (_, siblingData) => siblingData?.type === 'action_link',
               },
             },
+            {
+              name: 'formId',
+              type: 'relationship',
+              relationTo: 'forms',
+              label: 'Formulario vinculado',
+              admin: {
+                condition: (_, siblingData) => siblingData?.type === 'formulario',
+                description: 'Selecciona el formulario que debe completar el sponsor.',
+              },
+            },
             { name: 'dueDate', type: 'date', required: true, label: 'Fecha Máxima' },
+            {
+              name: 'unlockDate',
+              type: 'date',
+              label: 'Fecha de habilitación del entregable',
+              admin: {
+                description:
+                  'Opcional. Sobreescribe la fecha de la categoría para este entregable específico. Si no se define, se usa la de la categoría.',
+              },
+            },
+            {
+              name: 'relatedItems',
+              type: 'json',
+              label: 'Ítems relacionados',
+              admin: {
+                description: 'Selecciona los ítems del beneficio a los que aplica este entregable.',
+                components: {
+                  Field: '@/components/admin/RelatedItemsPicker#RelatedItemsPicker',
+                },
+              },
+            },
           ],
         },
         {
@@ -90,13 +131,20 @@ export const Plans: CollectionConfig = {
       async ({ doc, req, operation }) => {
         if (operation === 'update') {
           try {
-            // Find all sponsors (we fetch all to avoid nested array query complexities in Payload)
-            // Limit 1000 is safe for B2B scale.
             const { docs: sponsors } = await req.payload.find({
               collection: 'sponsors',
               limit: 1000,
               depth: 0,
             })
+
+            const normalizeRelated = (items: any): string[] => {
+              if (!Array.isArray(items)) return []
+              return items
+                .map((r: any) => (typeof r === 'string' ? r : r?.itemName))
+                .filter(Boolean)
+            }
+            const normalizeId = (id: any) =>
+              id ? (typeof id === 'object' ? id.id : id) : null
 
             for (const sponsor of sponsors as any[]) {
               let hasChanges = false
@@ -109,96 +157,147 @@ export const Plans: CollectionConfig = {
                     ? participation.plan.id
                     : participation.plan
 
-                // Si el sponsor está participando con ESTE plan que acaba de ser modificado
-                if (planId === doc.id) {
-                  const currentDeliverables = participation.deliverables || []
-                  const currentBenefitItems = participation.benefitItems || []
+                if (planId !== doc.id) continue
 
-                  const newDeliverables = [...currentDeliverables]
-                  const newBenefitItems = [...currentBenefitItems]
+                const newDeliverables = [...(participation.deliverables || [])]
+                const newBenefitItems = [...(participation.benefitItems || [])]
 
-                  if (doc.benefits) {
-                    doc.benefits.forEach((benefit: any) => {
-                      const benefitCat = benefit.benefitName
+                if (!doc.benefits) continue
 
-                      // Sincronizar entregables (Sponsor)
-                      if (benefit.hasDeliverable && benefit.deliverables) {
-                        benefit.deliverables.forEach((planDeliv: any) => {
-                          const existingIndex = newDeliverables.findIndex(
-                            (d) =>
-                              d.benefitCategory === benefitCat &&
-                              d.itemName === planDeliv.deliverableName,
-                          )
+                doc.benefits.forEach((benefit: any) => {
+                  const benefitCat = benefit.benefitName
 
-                          if (existingIndex >= 0) {
-                            const existingDeliv = newDeliverables[existingIndex]
-                            // Actualizar propiedades administrativas en silencio
-                            if (
-                              existingDeliv.type !== planDeliv.type ||
-                              existingDeliv.dueDate !== planDeliv.dueDate ||
-                              existingDeliv.actionUrl !== planDeliv.actionUrl
-                            ) {
-                              newDeliverables[existingIndex] = {
-                                ...existingDeliv,
-                                type: planDeliv.type,
-                                dueDate: planDeliv.dueDate,
-                                actionUrl: planDeliv.actionUrl,
-                              }
-                              hasChanges = true
-                            }
-                          } else {
-                            // Agregar nuevo entregable requerido
-                            newDeliverables.push({
-                              benefitCategory: benefitCat,
-                              itemName: planDeliv.deliverableName,
-                              type: planDeliv.type,
-                              actionUrl: planDeliv.actionUrl,
-                              dueDate: planDeliv.dueDate,
-                              status: 'pending',
-                            })
-                            hasChanges = true
-                          }
-                        })
+                  // ── Sync deliverables ──
+                  if (benefit.hasDeliverable && benefit.deliverables) {
+                    benefit.deliverables.forEach((planDeliv: any) => {
+                      const effectiveUnlockDate = planDeliv.unlockDate ?? benefit.unlockDate ?? null
+
+                      // 1. Match by stable planDeliverableId
+                      let existingIndex = newDeliverables.findIndex(
+                        (d) => d.source === 'plan' && d.planDeliverableId === planDeliv.id,
+                      )
+                      // 2. Fallback: match by category + name (migrates old data without stable ID)
+                      if (existingIndex < 0) {
+                        existingIndex = newDeliverables.findIndex(
+                          (d) =>
+                            d.source !== 'custom' &&
+                            d.benefitCategory === benefitCat &&
+                            d.itemName === planDeliv.deliverableName,
+                        )
                       }
 
-                      // Sincronizar items (Evidencias de Admin)
-                      if (benefit.items) {
-                        benefit.items.forEach((planItem: any) => {
-                          const existingExists = newBenefitItems.some(
-                            (i) =>
-                              i.benefitCategory === benefitCat && i.itemName === planItem.itemName,
-                          )
+                      if (existingIndex >= 0) {
+                        const existing = newDeliverables[existingIndex]
+                        if (existing.source === 'custom') return
 
-                          if (!existingExists) {
-                            newBenefitItems.push({
-                              benefitCategory: benefitCat,
-                              itemName: planItem.itemName,
-                              status: 'not_started',
-                            })
-                            hasChanges = true
+                        const incomingRelated = normalizeRelated(planDeliv.relatedItems)
+                        const existingRelated = normalizeRelated(existing.relatedItemNames)
+                        const incomingFormId = normalizeId(planDeliv.formId)
+                        const existingFormId = normalizeId(existing.formId)
+
+                        if (
+                          existing.planDeliverableId !== planDeliv.id ||
+                          existing.benefitCategory !== benefitCat ||
+                          existing.itemName !== planDeliv.deliverableName ||
+                          existing.type !== planDeliv.type ||
+                          existing.dueDate !== planDeliv.dueDate ||
+                          existing.actionUrl !== (planDeliv.actionUrl ?? null) ||
+                          existing.unlockDate !== effectiveUnlockDate ||
+                          existingFormId !== incomingFormId ||
+                          JSON.stringify(existingRelated) !== JSON.stringify(incomingRelated)
+                        ) {
+                          newDeliverables[existingIndex] = {
+                            ...existing,
+                            planDeliverableId: planDeliv.id,
+                            benefitCategory: benefitCat,
+                            itemName: planDeliv.deliverableName,
+                            type: planDeliv.type,
+                            dueDate: planDeliv.dueDate,
+                            actionUrl: planDeliv.actionUrl,
+                            unlockDate: effectiveUnlockDate,
+                            formId: incomingFormId,
+                            relatedItemNames: incomingRelated,
                           }
+                          hasChanges = true
+                        }
+                      } else {
+                        newDeliverables.push({
+                          source: 'plan',
+                          planDeliverableId: planDeliv.id,
+                          benefitCategory: benefitCat,
+                          itemName: planDeliv.deliverableName,
+                          type: planDeliv.type,
+                          actionUrl: planDeliv.actionUrl,
+                          dueDate: planDeliv.dueDate,
+                          unlockDate: effectiveUnlockDate,
+                          formId: normalizeId(planDeliv.formId),
+                          status: 'pending',
+                          relatedItemNames: normalizeRelated(planDeliv.relatedItems),
                         })
+                        hasChanges = true
                       }
                     })
                   }
 
-                  if (hasChanges) {
-                    participation.deliverables = newDeliverables
-                    participation.benefitItems = newBenefitItems
+                  // ── Sync benefitItems ──
+                  if (benefit.items) {
+                    benefit.items.forEach((planItem: any) => {
+                      // 1. Match by stable planBenefitItemId
+                      let existingIndex = newBenefitItems.findIndex(
+                        (bi) => bi.source === 'plan' && bi.planBenefitItemId === planItem.id,
+                      )
+                      // 2. Fallback: match by category + name
+                      if (existingIndex < 0) {
+                        existingIndex = newBenefitItems.findIndex(
+                          (bi) =>
+                            bi.source !== 'custom' &&
+                            bi.benefitCategory === benefitCat &&
+                            bi.itemName === planItem.itemName,
+                        )
+                      }
+
+                      if (existingIndex >= 0) {
+                        const existing = newBenefitItems[existingIndex]
+                        if (existing.source === 'custom') return
+
+                        if (
+                          existing.planBenefitItemId !== planItem.id ||
+                          existing.benefitCategory !== benefitCat ||
+                          existing.itemName !== planItem.itemName
+                        ) {
+                          newBenefitItems[existingIndex] = {
+                            ...existing,
+                            planBenefitItemId: planItem.id,
+                            benefitCategory: benefitCat,
+                            itemName: planItem.itemName,
+                          }
+                          hasChanges = true
+                        }
+                      } else {
+                        newBenefitItems.push({
+                          source: 'plan',
+                          planBenefitItemId: planItem.id,
+                          benefitCategory: benefitCat,
+                          itemName: planItem.itemName,
+                          status: 'not_started',
+                        })
+                        hasChanges = true
+                      }
+                    })
                   }
+                })
+
+                if (hasChanges) {
+                  participation.deliverables = newDeliverables
+                  participation.benefitItems = newBenefitItems
                 }
               }
 
-              // Si hubo cambios en este sponsor, guardamos
               if (hasChanges) {
-                // Importante: usamos req interno y skipHooks si es necesario para evitar loops,
-                // aunque Sponsors no triggerea a Plans.
                 await req.payload.update({
                   collection: 'sponsors',
                   id: sponsor.id,
-                  data: {
-                    eventParticipations,
-                  },
+                  data: { eventParticipations },
                   req,
                 })
                 console.log(

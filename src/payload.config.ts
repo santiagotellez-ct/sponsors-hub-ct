@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { Sponsors } from './collections/Sponsors'
 import { Plans } from './collections/Plans'
+import { Forms } from './collections/Forms'
 
 // Plugin de S3
 import { s3Storage } from '@payloadcms/storage-s3'
@@ -42,7 +43,7 @@ export default buildConfig({
       beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
     },
   },
-  collections: [Users, Media, Sponsors, Events, Plans],
+  collections: [Users, Media, Sponsors, Events, Plans, Forms],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
