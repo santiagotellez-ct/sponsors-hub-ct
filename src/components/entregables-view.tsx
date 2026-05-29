@@ -790,8 +790,8 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                       <span className="text-[11px] text-muted-foreground font-medium">
                                         {entry.label}
                                       </span>
-                                      {entry.type === 'image' &&
-                                      typeof entry.value === 'object' &&
+                                      {typeof entry.value === 'object' &&
+                                      entry.value !== null &&
                                       entry.value?.url ? (
                                         <img
                                           src={entry.value.url}
@@ -815,13 +815,15 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                         >
                                           {entry.value}
                                         </a>
+                                      ) : entry.type === 'checkbox' ? (
+                                        <span className="text-[13px] text-zinc-700 font-medium">
+                                          {entry.value ? 'Sí' : 'No'}
+                                        </span>
                                       ) : (
                                         <span className="text-[13px] text-zinc-700 font-medium">
-                                          {entry.type === 'checkbox'
-                                            ? entry.value
-                                              ? 'Sí'
-                                              : 'No'
-                                            : entry.value || '—'}
+                                          {entry.value != null && typeof entry.value !== 'object'
+                                            ? String(entry.value)
+                                            : '—'}
                                         </span>
                                       )}
                                     </div>
