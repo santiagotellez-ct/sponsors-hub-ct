@@ -1,0 +1,11 @@
+{
+  "functions": {
+    "src/app/(payload)/api/[...slug]/route.ts": {
+      "maxDuration": 60,
+      "memory": 1024
+    },
+    "src/app/(frontend)/dashboard/entregables/page.tsx": {
+      "maxDuration": 30
+    }
+  }
+}

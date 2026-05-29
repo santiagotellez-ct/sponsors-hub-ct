@@ -20,6 +20,13 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 export default buildConfig({
+  // 25 MB limit per file — covers logos, PDFs, reference images, and sponsor documents
+  upload: {
+    limits: {
+      fileSize: 26_214_400, // 25 MiB in bytes
+    },
+    abortOnLimit: true,
+  },
   admin: {
     user: Users.slug,
     importMap: {
