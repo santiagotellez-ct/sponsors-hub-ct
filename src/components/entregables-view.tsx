@@ -1074,7 +1074,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                 }))
 
               return (
-                <div key={field.id || field.fieldKey} className="space-y-1.5">
+                <div key={field.id || field.fieldKey} className="space-y-1.5 min-w-0">
                   <Label className="text-[13px] font-medium text-zinc-700">
                     {field.label}
                     {field.required && <span className="text-destructive ml-1">*</span>}
@@ -1118,7 +1118,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                   )}
                   {field.type === 'select' && (
                     <select
-                      className="w-full h-9 px-3 text-sm border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                      className="w-full max-w-full h-9 px-3 text-sm border border-input rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                       disabled={isLoading}
                       value={val}
                       onChange={(e) => setVal(e.target.value)}
@@ -1196,99 +1196,106 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
               form?.referenceTitle || refImageUrl || refPdfUrl || form?.referenceLink
 
             return (
-              <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-lg">{deliv.itemName}</DialogTitle>
+              <DialogContent className="w-[calc(100%-1.5rem)] max-w-xl sm:max-w-2xl max-h-[90dvh] flex flex-col gap-0 p-0 overflow-hidden">
+                {/* ── Header fijo ── */}
+                <div className="px-5 pt-5 pb-4 border-b shrink-0">
+                  <DialogTitle className="text-[17px] font-semibold leading-snug pr-6">
+                    {deliv.itemName}
+                  </DialogTitle>
                   {form?.description && (
-                    <DialogDescription className="text-[13.5px]">
+                    <p className="text-[13px] text-muted-foreground mt-1.5 leading-relaxed break-words whitespace-pre-line">
                       {form.description}
-                    </DialogDescription>
+                    </p>
                   )}
-                </DialogHeader>
+                </div>
 
-                {/* ── Sección de referencia ── */}
-                {hasReference && (
-                  <div className="rounded-xl border border-border/70 bg-muted/30 overflow-hidden">
-                    {/* Header de referencia */}
-                    {form?.referenceTitle && (
-                      <div className="px-4 pt-3.5 pb-2">
-                        <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-1">
-                          Referencia
-                        </p>
-                        <p className="text-[14px] font-semibold text-foreground leading-snug">
-                          {form.referenceTitle}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Imagen de referencia */}
-                    {refImageUrl && (
-                      <div className={`px-4 ${form?.referenceTitle ? 'pb-3' : 'pt-3.5 pb-3'}`}>
-                        {!form?.referenceTitle && (
-                          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-2">
-                            Referencia
-                          </p>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => setRefImageModal({ url: refImageUrl, alt: form?.referenceTitle || deliv.itemName })}
-                          className="group relative block rounded-lg overflow-hidden border border-border/60 bg-background hover:border-primary/40 transition-colors w-full"
-                        >
-                          <img
-                            src={refImageUrl}
-                            alt={deliv.referenceTitle || 'Referencia'}
-                            className="w-full max-h-36 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                            <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 text-white text-[11px] font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                              <EyeIcon className="w-3 h-3" /> Ver imagen
-                            </span>
+                {/* ── Cuerpo scrollable ── */}
+                <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-5">
+                  {/* Sección de referencia */}
+                  {hasReference && (
+                    <div className="rounded-xl border border-border/70 bg-muted/30 overflow-hidden">
+                      <div className="px-4 pt-3.5 pb-3 space-y-3">
+                        {form?.referenceTitle && (
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-1">
+                              Referencia
+                            </p>
+                            <p className="text-[14px] font-semibold text-foreground leading-snug">
+                              {form.referenceTitle}
+                            </p>
                           </div>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* PDF y/o Link de referencia */}
-                    {(refPdfUrl || form?.referenceLink) && (
-                      <div className={`flex flex-wrap gap-2 px-4 pb-3.5 ${!refImageUrl && !form?.referenceTitle ? 'pt-3.5' : ''}`}>
-                        {refPdfUrl && (
-                          <a
-                            href={refPdfUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background hover:bg-muted/60 text-foreground px-3.5 py-2 text-[13px] font-medium transition-colors shadow-xs"
-                          >
-                            <FileTextIcon className="w-4 h-4 text-red-500/80 shrink-0" />
-                            Ver PDF de referencia
-                            <ExternalLinkIcon className="w-3 h-3 opacity-40 ml-0.5" />
-                          </a>
                         )}
-                        {form?.referenceLink && (
-                          <a
-                            href={form.referenceLink.startsWith('http') ? form.referenceLink : `https://${form.referenceLink}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary px-3.5 py-2 text-[13px] font-medium transition-colors shadow-xs"
+
+                        {refImageUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setRefImageModal({ url: refImageUrl, alt: form?.referenceTitle || deliv.itemName })}
+                            className="group relative block w-full rounded-lg overflow-hidden border border-border/60 bg-background hover:border-primary/40 transition-colors"
                           >
-                            <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0" />
-                            Ver ejemplo
-                            <ExternalLinkIcon className="w-3 h-3 opacity-40 ml-0.5" />
-                          </a>
+                            {!form?.referenceTitle && (
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 mb-2 text-left px-0">
+                                Referencia
+                              </p>
+                            )}
+                            <img
+                              src={refImageUrl}
+                              alt={form?.referenceTitle || 'Referencia'}
+                              className="w-full max-h-44 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center">
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 text-white text-[11px] font-medium px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                                <EyeIcon className="w-3 h-3" /> Ver imagen completa
+                              </span>
+                            </div>
+                          </button>
+                        )}
+
+                        {(refPdfUrl || form?.referenceLink) && (
+                          <div className="flex flex-wrap gap-2">
+                            {refPdfUrl && (
+                              <a
+                                href={refPdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-lg border border-border/70 bg-background hover:bg-muted/60 text-foreground px-3 py-2 text-[12.5px] font-medium transition-colors"
+                              >
+                                <FileTextIcon className="w-4 h-4 text-red-500/80 shrink-0" />
+                                Ver PDF de referencia
+                                <ExternalLinkIcon className="w-3 h-3 opacity-40" />
+                              </a>
+                            )}
+                            {form?.referenceLink && (
+                              <a
+                                href={form.referenceLink.startsWith('http') ? form.referenceLink : `https://${form.referenceLink}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary px-3 py-2 text-[12.5px] font-medium transition-colors"
+                              >
+                                <ExternalLinkIcon className="w-3.5 h-3.5 shrink-0" />
+                                Ver ejemplo
+                                <ExternalLinkIcon className="w-3 h-3 opacity-40" />
+                              </a>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                {!form?.fields?.length ? (
-                  <p className="text-sm text-muted-foreground py-6 text-center italic">
-                    No hay campos configurados en este formulario.
-                  </p>
-                ) : (
-                  <div className="space-y-5 py-2">{(form.fields as any[]).map(renderField)}</div>
-                )}
+                  {/* Campos del formulario */}
+                  {!form?.fields?.length ? (
+                    <p className="text-sm text-muted-foreground py-6 text-center italic">
+                      No hay campos configurados en este formulario.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {(form.fields as any[]).map(renderField)}
+                    </div>
+                  )}
+                </div>
 
-                <DialogFooter className="mt-2 gap-2 flex-row justify-end">
+                {/* ── Footer fijo ── */}
+                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t shrink-0">
                   <Button
                     variant="outline"
                     disabled={isLoading}
@@ -1306,7 +1313,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                     {isLoading && <Loader2Icon className="w-4 h-4 animate-spin mr-2" />}
                     Enviar Formulario
                   </Button>
-                </DialogFooter>
+                </div>
               </DialogContent>
             )
           })()}
