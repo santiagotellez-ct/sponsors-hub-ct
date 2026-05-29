@@ -79,113 +79,110 @@ function MediaModal({ data, onClose }: { data: ModalData | null; onClose: () => 
         style={{
           background: 'var(--theme-bg)',
           borderRadius: '8px',
-          maxWidth: '80vw',
-          maxHeight: '85vh',
-          overflow: 'auto',
-          padding: '1.5rem',
+          maxWidth: '90vw',
+          maxHeight: '92vh',
+          overflow: 'hidden',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
+          gap: '0',
           position: 'relative',
-          minWidth: '320px',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.4)',
+          minWidth: '340px',
+          width: data.kind === 'document' ? 'min(860px, 90vw)' : 'auto',
+          boxShadow: '0 24px 72px rgba(0,0,0,0.45)',
         }}
       >
-        {/* Close */}
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: '0.75rem',
-            right: '0.75rem',
-            background: 'var(--theme-elevation-150)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '28px',
-            height: '28px',
-            cursor: 'pointer',
-            color: 'var(--theme-text)',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            lineHeight: 1,
-          }}
-          title="Cerrar (Esc)"
-        >
-          ✕
-        </button>
-
-        {/* Filename */}
-        <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--theme-text)', margin: 0, paddingRight: '2.5rem', wordBreak: 'break-all' }}>
-          {data.filename}
-        </p>
+        {/* Header bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '0.875rem 1rem',
+          borderBottom: '1px solid var(--theme-elevation-150)',
+          flexShrink: 0,
+          gap: '1rem',
+        }}>
+          <p style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--theme-text)', margin: 0, wordBreak: 'break-all', flex: 1 }}>
+            {data.filename}
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={handleDownload}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '0.4rem 0.875rem',
+                background: 'var(--theme-text)',
+                color: 'var(--theme-bg)',
+                border: 'none',
+                borderRadius: '4px',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+              Descargar
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                background: 'var(--theme-elevation-150)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '28px',
+                height: '28px',
+                cursor: 'pointer',
+                color: 'var(--theme-text)',
+                fontSize: '0.875rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                flexShrink: 0,
+              }}
+              title="Cerrar (Esc)"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
 
         {/* Image preview */}
         {data.kind === 'image' && (
-          <div style={{ display: 'flex', justifyContent: 'center', background: 'var(--theme-elevation-50)', borderRadius: '6px', padding: '1rem' }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            background: 'var(--theme-elevation-50)',
+            padding: '1.25rem',
+            overflow: 'auto',
+            flex: 1,
+          }}>
             <img
               src={data.url}
               alt={data.filename}
-              style={{ maxWidth: '100%', maxHeight: '55vh', objectFit: 'contain', borderRadius: '4px', display: 'block' }}
+              style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '4px', display: 'block' }}
             />
           </div>
         )}
 
-        {/* Document placeholder */}
+        {/* Document preview via iframe */}
         {data.kind === 'document' && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--theme-elevation-50)', borderRadius: '6px', padding: '1rem' }}>
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--theme-elevation-500)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-              <polyline points="14 2 14 8 20 8" />
-            </svg>
-            <span style={{ fontSize: '0.875rem', color: 'var(--theme-elevation-600)' }}>Documento adjunto</span>
+          <div style={{ flex: 1, minHeight: '65vh', background: 'var(--theme-elevation-50)', display: 'flex', flexDirection: 'column' }}>
+            <iframe
+              src={data.url}
+              title={data.filename}
+              style={{ width: '100%', height: '100%', minHeight: '65vh', border: 'none', flex: 1 }}
+            />
           </div>
         )}
-
-        {/* Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', paddingTop: '0.25rem' }}>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              padding: '0.45rem 1rem',
-              border: '1px solid var(--theme-elevation-200)',
-              borderRadius: '4px',
-              background: 'transparent',
-              color: 'var(--theme-text)',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-            }}
-          >
-            Cerrar
-          </button>
-          <button
-            type="button"
-            onClick={handleDownload}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 1rem',
-              background: 'var(--theme-text)',
-              color: 'var(--theme-bg)',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
-            Descargar
-          </button>
-        </div>
       </div>
     </div>
   )
