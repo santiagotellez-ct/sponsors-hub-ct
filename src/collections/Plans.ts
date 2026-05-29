@@ -96,6 +96,44 @@ export const Plans: CollectionConfig = {
                 description: 'Selecciona el formulario que debe completar el sponsor.',
               },
             },
+            {
+              name: 'referenceTitle',
+              type: 'text',
+              label: 'Título de referencia',
+              admin: {
+                condition: (_, siblingData) => siblingData?.type === 'formulario',
+                description: 'Ej: "Así se verá tu video en el evento". Se muestra al sponsor antes de rellenar el formulario.',
+              },
+            },
+            {
+              name: 'referenceImage',
+              type: 'upload',
+              relationTo: 'media',
+              label: 'Imagen de referencia',
+              admin: {
+                condition: (_, siblingData) => siblingData?.type === 'formulario',
+                description: 'Vista previa en miniatura; el sponsor puede ampliarla.',
+              },
+            },
+            {
+              name: 'referencePdf',
+              type: 'upload',
+              relationTo: 'media',
+              label: 'PDF de referencia',
+              admin: {
+                condition: (_, siblingData) => siblingData?.type === 'formulario',
+                description: 'Se abrirá en nueva pestaña.',
+              },
+            },
+            {
+              name: 'referenceLink',
+              type: 'text',
+              label: 'Link de referencia',
+              admin: {
+                condition: (_, siblingData) => siblingData?.type === 'formulario',
+                description: 'URL de ejemplo o referencia visual (se muestra como botón).',
+              },
+            },
             { name: 'dueDate', type: 'date', required: true, label: 'Fecha Máxima' },
             {
               name: 'unlockDate',
@@ -198,6 +236,9 @@ export const Plans: CollectionConfig = {
                         const incomingFormId = normalizeId(planDeliv.formId)
                         const existingFormId = normalizeId(existing.formId)
 
+                        const incomingRefImg = normalizeId(planDeliv.referenceImage)
+                        const incomingRefPdf = normalizeId(planDeliv.referencePdf)
+
                         if (
                           existing.planDeliverableId !== planDeliv.id ||
                           existing.benefitCategory !== benefitCat ||
@@ -207,7 +248,11 @@ export const Plans: CollectionConfig = {
                           existing.actionUrl !== (planDeliv.actionUrl ?? null) ||
                           existing.unlockDate !== effectiveUnlockDate ||
                           existingFormId !== incomingFormId ||
-                          JSON.stringify(existingRelated) !== JSON.stringify(incomingRelated)
+                          JSON.stringify(existingRelated) !== JSON.stringify(incomingRelated) ||
+                          existing.referenceTitle !== (planDeliv.referenceTitle ?? null) ||
+                          normalizeId(existing.referenceImage) !== incomingRefImg ||
+                          normalizeId(existing.referencePdf) !== incomingRefPdf ||
+                          existing.referenceLink !== (planDeliv.referenceLink ?? null)
                         ) {
                           newDeliverables[existingIndex] = {
                             ...existing,
@@ -220,6 +265,10 @@ export const Plans: CollectionConfig = {
                             unlockDate: effectiveUnlockDate,
                             formId: incomingFormId,
                             relatedItemNames: incomingRelated,
+                            referenceTitle: planDeliv.referenceTitle ?? null,
+                            referenceImage: incomingRefImg,
+                            referencePdf: incomingRefPdf,
+                            referenceLink: planDeliv.referenceLink ?? null,
                           }
                           hasChanges = true
                         }
@@ -236,6 +285,10 @@ export const Plans: CollectionConfig = {
                           formId: normalizeId(planDeliv.formId),
                           status: 'pending',
                           relatedItemNames: normalizeRelated(planDeliv.relatedItems),
+                          referenceTitle: planDeliv.referenceTitle ?? null,
+                          referenceImage: normalizeId(planDeliv.referenceImage),
+                          referencePdf: normalizeId(planDeliv.referencePdf),
+                          referenceLink: planDeliv.referenceLink ?? null,
                         })
                         hasChanges = true
                       }
