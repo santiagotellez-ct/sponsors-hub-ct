@@ -1187,13 +1187,13 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
               )
             }
 
-            // Helpers para campos de referencia (pueden ser objeto expandido o ID)
+            // Campos de referencia vienen del form (formId expandido con depth:2)
             const refImageUrl =
-              typeof deliv.referenceImage === 'object' ? deliv.referenceImage?.url : null
+              typeof form?.referenceImage === 'object' ? form?.referenceImage?.url : null
             const refPdfUrl =
-              typeof deliv.referencePdf === 'object' ? deliv.referencePdf?.url : null
+              typeof form?.referencePdf === 'object' ? form?.referencePdf?.url : null
             const hasReference =
-              deliv.referenceTitle || refImageUrl || refPdfUrl || deliv.referenceLink
+              form?.referenceTitle || refImageUrl || refPdfUrl || form?.referenceLink
 
             return (
               <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
@@ -1210,28 +1210,28 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                 {hasReference && (
                   <div className="rounded-xl border border-border/70 bg-muted/30 overflow-hidden">
                     {/* Header de referencia */}
-                    {deliv.referenceTitle && (
+                    {form?.referenceTitle && (
                       <div className="px-4 pt-3.5 pb-2">
                         <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-1">
                           Referencia
                         </p>
                         <p className="text-[14px] font-semibold text-foreground leading-snug">
-                          {deliv.referenceTitle}
+                          {form.referenceTitle}
                         </p>
                       </div>
                     )}
 
                     {/* Imagen de referencia */}
                     {refImageUrl && (
-                      <div className={`px-4 ${deliv.referenceTitle ? 'pb-3' : 'pt-3.5 pb-3'}`}>
-                        {!deliv.referenceTitle && (
+                      <div className={`px-4 ${form?.referenceTitle ? 'pb-3' : 'pt-3.5 pb-3'}`}>
+                        {!form?.referenceTitle && (
                           <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70 mb-2">
                             Referencia
                           </p>
                         )}
                         <button
                           type="button"
-                          onClick={() => setRefImageModal({ url: refImageUrl, alt: deliv.referenceTitle || deliv.itemName })}
+                          onClick={() => setRefImageModal({ url: refImageUrl, alt: form?.referenceTitle || deliv.itemName })}
                           className="group relative block rounded-lg overflow-hidden border border-border/60 bg-background hover:border-primary/40 transition-colors w-full"
                         >
                           <img
@@ -1249,8 +1249,8 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                     )}
 
                     {/* PDF y/o Link de referencia */}
-                    {(refPdfUrl || deliv.referenceLink) && (
-                      <div className={`flex flex-wrap gap-2 px-4 pb-3.5 ${!refImageUrl && !deliv.referenceTitle ? 'pt-3.5' : ''}`}>
+                    {(refPdfUrl || form?.referenceLink) && (
+                      <div className={`flex flex-wrap gap-2 px-4 pb-3.5 ${!refImageUrl && !form?.referenceTitle ? 'pt-3.5' : ''}`}>
                         {refPdfUrl && (
                           <a
                             href={refPdfUrl}
@@ -1263,9 +1263,9 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                             <ExternalLinkIcon className="w-3 h-3 opacity-40 ml-0.5" />
                           </a>
                         )}
-                        {deliv.referenceLink && (
+                        {form?.referenceLink && (
                           <a
-                            href={deliv.referenceLink.startsWith('http') ? deliv.referenceLink : `https://${deliv.referenceLink}`}
+                            href={form.referenceLink.startsWith('http') ? form.referenceLink : `https://${form.referenceLink}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary px-3.5 py-2 text-[13px] font-medium transition-colors shadow-xs"

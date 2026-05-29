@@ -277,10 +277,6 @@ export interface Sponsor {
                * Selecciona el formulario que debe completar el sponsor.
                */
               formId?: (number | null) | Form;
-              referenceTitle?: string | null;
-              referenceImage?: (number | null) | Media;
-              referencePdf?: (number | null) | Media;
-              referenceLink?: string | null;
               formResponse?:
                 | {
                     [k: string]: unknown;
@@ -420,22 +416,6 @@ export interface Plan {
                * Selecciona el formulario que debe completar el sponsor.
                */
               formId?: (number | null) | Form;
-              /**
-               * Ej: "Así se verá tu video en el evento". Se muestra al sponsor antes de rellenar el formulario.
-               */
-              referenceTitle?: string | null;
-              /**
-               * Vista previa en miniatura; el sponsor puede ampliarla.
-               */
-              referenceImage?: (number | null) | Media;
-              /**
-               * Se abrirá en nueva pestaña.
-               */
-              referencePdf?: (number | null) | Media;
-              /**
-               * URL de ejemplo o referencia visual (se muestra como botón).
-               */
-              referenceLink?: string | null;
               dueDate: string;
               /**
                * Opcional. Sobreescribe la fecha de la categoría para este entregable específico. Si no se define, se usa la de la categoría.
@@ -476,6 +456,22 @@ export interface Form {
   id: number;
   title: string;
   description?: string | null;
+  /**
+   * Ej: "Así se verá tu video en el evento". Se muestra al sponsor antes de los campos del formulario.
+   */
+  referenceTitle?: string | null;
+  /**
+   * El sponsor verá una miniatura clicable que abre la imagen a pantalla completa.
+   */
+  referenceImage?: (number | null) | Media;
+  /**
+   * Se abrirá en una nueva pestaña al hacer clic.
+   */
+  referencePdf?: (number | null) | Media;
+  /**
+   * URL de ejemplo. Se muestra como botón al sponsor.
+   */
+  referenceLink?: string | null;
   fields?:
     | {
         label: string;
@@ -709,10 +705,6 @@ export interface SponsorsSelect<T extends boolean = true> {
               uploadedLink?: T;
               relatedItemNames?: T;
               formId?: T;
-              referenceTitle?: T;
-              referenceImage?: T;
-              referencePdf?: T;
-              referenceLink?: T;
               formResponse?: T;
               source?: T;
               id?: T;
@@ -823,10 +815,6 @@ export interface PlansSelect<T extends boolean = true> {
               type?: T;
               actionUrl?: T;
               formId?: T;
-              referenceTitle?: T;
-              referenceImage?: T;
-              referencePdf?: T;
-              referenceLink?: T;
               dueDate?: T;
               unlockDate?: T;
               relatedItems?: T;
@@ -850,6 +838,10 @@ export interface PlansSelect<T extends boolean = true> {
 export interface FormsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
+  referenceTitle?: T;
+  referenceImage?: T;
+  referencePdf?: T;
+  referenceLink?: T;
   fields?:
     | T
     | {

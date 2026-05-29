@@ -287,44 +287,6 @@ export const Sponsors: CollectionConfig = {
               },
             },
             {
-              name: 'referenceTitle',
-              type: 'text',
-              label: 'Título de referencia',
-              admin: {
-                condition: (_data, siblingData) => siblingData?.type === 'formulario',
-                readOnly: true,
-              },
-            },
-            {
-              name: 'referenceImage',
-              type: 'upload',
-              relationTo: 'media',
-              label: 'Imagen de referencia',
-              admin: {
-                condition: (_data, siblingData) => siblingData?.type === 'formulario',
-                readOnly: true,
-              },
-            },
-            {
-              name: 'referencePdf',
-              type: 'upload',
-              relationTo: 'media',
-              label: 'PDF de referencia',
-              admin: {
-                condition: (_data, siblingData) => siblingData?.type === 'formulario',
-                readOnly: true,
-              },
-            },
-            {
-              name: 'referenceLink',
-              type: 'text',
-              label: 'Link de referencia',
-              admin: {
-                condition: (_data, siblingData) => siblingData?.type === 'formulario',
-                readOnly: true,
-              },
-            },
-            {
               name: 'formResponse',
               type: 'json',
               label: 'Respuestas del formulario',

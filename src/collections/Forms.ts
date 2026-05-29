@@ -44,6 +44,40 @@ export const Forms: CollectionConfig = {
       label: 'Descripción / Instrucciones para el sponsor',
     },
     {
+      name: 'referenceTitle',
+      type: 'text',
+      label: 'Título de la referencia visual',
+      admin: {
+        description: 'Ej: "Así se verá tu video en el evento". Se muestra al sponsor antes de los campos del formulario.',
+      },
+    },
+    {
+      name: 'referenceImage',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'Imagen de referencia',
+      admin: {
+        description: 'El sponsor verá una miniatura clicable que abre la imagen a pantalla completa.',
+      },
+    },
+    {
+      name: 'referencePdf',
+      type: 'upload',
+      relationTo: 'media',
+      label: 'PDF de referencia',
+      admin: {
+        description: 'Se abrirá en una nueva pestaña al hacer clic.',
+      },
+    },
+    {
+      name: 'referenceLink',
+      type: 'text',
+      label: 'Link de referencia',
+      admin: {
+        description: 'URL de ejemplo. Se muestra como botón al sponsor.',
+      },
+    },
+    {
       name: 'fields',
       type: 'array',
       label: 'Campos',
