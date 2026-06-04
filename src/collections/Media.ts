@@ -5,7 +5,15 @@ export const Media: CollectionConfig = {
   admin: {
     group: 'Sistema y Archivos',
   },
-  upload: true,
+  upload: {
+    mimeTypes: [
+      'image/*',
+      'application/pdf',
+      'application/postscript',        // .ai, .eps, .ps
+      'application/illustrator',        // .ai (variante)
+      'application/vnd.adobe.illustrator', // .ai (Adobe específico)
+    ],
+  },
   access: {
     read: () => true, // Para que el frontend pueda leer los archivos
   },
