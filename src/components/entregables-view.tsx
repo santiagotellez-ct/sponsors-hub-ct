@@ -423,7 +423,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
       totalDeliverablesCount++
       if (d.status === 'completed') {
         completedDeliverablesCount++
-      } else if (!isBlockUnlocked || !isDateUnlocked(d.unlockDate)) {
+      } else if (d.unlockDate ? !isDateUnlocked(d.unlockDate) : !isBlockUnlocked) {
         blockedDeliverablesCount++
       } else {
         pendingDeliverablesCount++
@@ -542,6 +542,12 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
 
             isPreviousBlockCompletedMap = isCurrentBlockCompleted
 
+            // Si algún entregable del bloque tiene fecha que ya pasó, el bloque no se bloquea visualmente
+            const hasAnyDateUnlockedInBlock = blockDeliverables.some(
+              (d: any) => d.unlockDate && isDateUnlocked(d.unlockDate),
+            )
+            const isBlockEffectivelyLocked = !isBlockUnlocked && !hasAnyDateUnlockedInBlock
+
             // Entregables ligados a ítems vs. huérfanos (sin relatedItemNames)
             const linkedDeliverableIds = new Set(
               blockItems.flatMap((item: any) =>
@@ -561,11 +567,11 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                 {/* Indicador de estado en la línea de tiempo */}
                 <div
                   className={`absolute -left-[14px] top-4 flex items-center justify-center w-7 h-7 rounded-full shrink-0 outline outline-4 outline-background
-                  ${isCurrentBlockCompleted ? 'bg-primary text-primary-foreground' : isBlockUnlocked ? 'bg-white border border-muted-foreground/40 text-muted-foreground' : 'bg-transparent border-2 border-muted-foreground/20 text-muted-foreground/40'}`}
+                  ${isCurrentBlockCompleted ? 'bg-primary text-primary-foreground' : !isBlockEffectivelyLocked ? 'bg-white border border-muted-foreground/40 text-muted-foreground' : 'bg-transparent border-2 border-muted-foreground/20 text-muted-foreground/40'}`}
                 >
                   {isCurrentBlockCompleted ? (
                     <CheckCircle2Icon className="w-3.5 h-3.5" />
-                  ) : isBlockUnlocked ? (
+                  ) : !isBlockEffectivelyLocked ? (
                     <ClockIcon className="w-3.5 h-3.5" />
                   ) : (
                     <LockIcon className="w-3 h-3" />
@@ -573,7 +579,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                 </div>
 
                 <div
-                  className={`w-full max-w-4xl bg-white border border-border/60 rounded-2xl overflow-hidden transition-all duration-300 ${!isBlockUnlocked ? 'opacity-50 pointer-events-none' : ''}`}
+                  className={`w-full max-w-4xl bg-white border border-border/60 rounded-2xl overflow-hidden transition-all duration-300 ${isBlockEffectivelyLocked ? 'opacity-50 pointer-events-none' : ''}`}
                 >
                   {/* HEADER DE CATEGORÍA */}
                   <div className="bg-muted/30 px-5 py-4 border-b border-border/50 flex justify-between items-center gap-4">
@@ -582,7 +588,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                       <h3 className="text-[17px] font-bold text-zinc-900">{categoryName}</h3>
                     </div>
                     <div>
-                      {!isBlockUnlocked && (
+                      {isBlockEffectivelyLocked && (
                         <Badge
                           variant="outline"
                           className="bg-transparent text-muted-foreground border-muted-foreground/30 px-3 h-7"
@@ -590,7 +596,7 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                           Bloqueado
                         </Badge>
                       )}
-                      {isBlockUnlocked && !isCurrentBlockCompleted && (
+                      {!isBlockEffectivelyLocked && !isCurrentBlockCompleted && (
                         <Badge
                           variant="outline"
                           className="bg-background text-zinc-600 border-border/80 px-3 h-7 font-medium"
@@ -613,8 +619,9 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                       const sequentialUnlocked = isLogoCompleted
                         ? isBlockUnlocked
                         : deliv.itemName.toLowerCase().includes('logo')
-                      const isDeliverableUnlocked =
-                        sequentialUnlocked && isDateUnlocked(deliv.unlockDate)
+                      const isDeliverableUnlocked = deliv.unlockDate
+                        ? isDateUnlocked(deliv.unlockDate)
+                        : sequentialUnlocked
                       const isPending = deliv.status === 'pending' || deliv.status === 'overdue'
 
                       // relatedItemNames puede ser string[] (nuevo) o [{itemName}][] (legacy)
@@ -677,15 +684,15 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
                                       {deliv.type !== 'formulario' &&
                                       expandedDeliverable === deliv.id
                                         ? 'Cancelar'
-                                        : !sequentialUnlocked
-                                          ? 'Bloqueado'
-                                          : !isDateUnlocked(deliv.unlockDate)
+                                        : !isDeliverableUnlocked
+                                          ? deliv.unlockDate
                                             ? `Disponible el ${new Date(deliv.unlockDate!).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}`
-                                            : deliv.type === 'action_link'
-                                              ? 'Ver Acción'
-                                              : deliv.type === 'formulario'
-                                                ? 'Completar'
-                                                : 'Enviar'}
+                                            : 'Bloqueado'
+                                          : deliv.type === 'action_link'
+                                            ? 'Ver Acción'
+                                            : deliv.type === 'formulario'
+                                              ? 'Completar'
+                                              : 'Enviar'}
                                     </Button>
                                   )}
                                 </>
