@@ -1,0 +1,375 @@
+'use client'
+
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
+
+type DeliverableCol = {
+  key: string
+  itemName: string
+  benefitCategory: string
+  type: string
+}
+
+type SponsorRow = {
+  id: string | number
+  name: string
+  planName: string
+  deliverables: Record<string, any>
+  total: number
+  completed: number
+}
+
+type ModalData =
+  | { kind: 'file'; url: string; filename: string; isImage: boolean }
+  | { kind: 'form'; sponsorName: string; delivName: string; fields: { label: string; value: any; type: string }[]; status: string; dueDate?: string }
+
+function activePart(sponsor: any) {
+  return sponsor.eventParticipations?.find((p: any) => p.isCurrent) ?? sponsor.eventParticipations?.[0] ?? null
+}
+
+function normalizePlan(plan: any): string {
+  if (!plan) return '—'
+  if (typeof plan === 'object') return plan.name || String(plan.id)
+  return String(plan)
+}
+
+function fmtDate(d: any): string {
+  if (!d) return ''
+  try { return new Date(d).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: '2-digit' }) }
+  catch { return String(d) }
+}
+
+const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot: string }> = {
+  completed: { label: '✓ Enviado',   bg: '#d1fae5', color: '#065f46', dot: '#10b981' },
+  pending:   { label: '○ Pendiente', bg: '#fef3c7', color: '#92400e', dot: '#f59e0b' },
+  overdue:   { label: '! Vencido',   bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' },
+}
+
+function statusCfg(status?: string) {
+  return STATUS_CFG[status ?? ''] ?? { label: '—', bg: 'var(--theme-elevation-100)', color: 'var(--theme-elevation-400)', dot: 'var(--theme-elevation-300)' }
+}
+
+function Modal({ data, onClose }: { data: ModalData | null; onClose: () => void }) {
+  useEffect(() => {
+    if (!data) return
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [data, onClose])
+
+  if (!data) return null
+
+  const handleDownload = async (url: string, filename: string) => {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = blobUrl; a.download = filename; a.click()
+      URL.revokeObjectURL(blobUrl)
+    } catch { window.open(url, '_blank') }
+  }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--theme-bg)', borderRadius: '10px', width: data.kind === 'form' ? 'min(560px, 95vw)' : 'min(720px, 95vw)', maxHeight: '88vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 72px rgba(0,0,0,0.4)', border: '1px solid var(--theme-elevation-150)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', borderBottom: '1px solid var(--theme-elevation-150)', flexShrink: 0, gap: '1rem' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            {data.kind === 'form' ? (
+              <>
+                <p style={{ fontWeight: 700, fontSize: '1rem', margin: 0, color: 'var(--theme-text)' }}>{data.delivName}</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--theme-elevation-500)', margin: '2px 0 0' }}>{data.sponsorName}</p>
+              </>
+            ) : (
+              <p style={{ fontWeight: 600, fontSize: '0.9375rem', margin: 0, wordBreak: 'break-all', color: 'var(--theme-text)' }}>{data.filename}</p>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
+            {data.kind === 'file' && (
+              <button type="button" onClick={() => handleDownload(data.url, data.filename)} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 0.875rem', background: 'var(--theme-text)', color: 'var(--theme-bg)', border: 'none', borderRadius: '4px', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}>↓ Descargar</button>
+            )}
+            <button type="button" onClick={onClose} style={{ background: 'var(--theme-elevation-150)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', color: 'var(--theme-text)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+        </div>
+        <div style={{ overflow: 'auto', flex: 1 }}>
+          {data.kind === 'file' && data.isImage && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--theme-elevation-50)', padding: '1.5rem' }}>
+              <img src={data.url} alt={data.filename} style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '4px' }} />
+            </div>
+          )}
+          {data.kind === 'file' && !data.isImage && (
+            <iframe src={data.url} title={data.filename} style={{ width: '100%', height: '68vh', border: 'none' }} />
+          )}
+          {data.kind === 'form' && (
+            <div style={{ padding: '1.25rem' }}>
+              <div style={{ marginBottom: '1rem' }}>
+                {(() => { const cfg = statusCfg(data.status); return (<span style={{ display: 'inline-block', padding: '0.25rem 0.75rem', borderRadius: '99px', fontSize: '0.75rem', fontWeight: 600, background: cfg.bg, color: cfg.color }}>{cfg.label}</span>) })()}
+                {data.dueDate && <span style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-400)', marginLeft: '0.75rem' }}>Fecha límite: {fmtDate(data.dueDate)}</span>}
+              </div>
+              {data.fields.map((f, i) => (
+                <div key={i} style={{ padding: '0.875rem 0', borderBottom: i < data.fields.length - 1 ? '1px solid var(--theme-elevation-100)' : 'none' }}>
+                  <div style={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--theme-elevation-500)', marginBottom: '4px' }}>{f.label}</div>
+                  <div style={{ fontSize: '0.9rem', color: 'var(--theme-text)', lineHeight: 1.5 }}>
+                    {f.value === null || f.value === undefined || f.value === '' ? (
+                      <span style={{ color: 'var(--theme-elevation-300)' }}>Sin respuesta</span>
+                    ) : f.type === 'link' || f.type === 'email' ? (
+                      <a href={f.type === 'email' ? `mailto:${f.value}` : f.value} target="_blank" rel="noreferrer" style={{ color: '#3b82f6', wordBreak: 'break-all' }}>{f.value}</a>
+                    ) : String(f.value)}
+                  </div>
+                </div>
+              ))}
+              {data.fields.length === 0 && <p style={{ color: 'var(--theme-elevation-400)', fontSize: '0.875rem' }}>No hay respuestas registradas aún.</p>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: any; colType: string; sponsorName: string; colName: string; onOpen: (data: ModalData) => void }) {
+  const cfg = statusCfg(deliv?.status)
+  if (!deliv) {
+    return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><span style={{ color: 'var(--theme-elevation-250)', fontSize: '0.875rem' }}>—</span></div>
+  }
+  const isCompleted = deliv.status === 'completed'
+  const handleClick = () => {
+    if (!isCompleted) return
+    if (['image', 'document'].includes(colType) && deliv.uploadedFile) {
+      const file = deliv.uploadedFile
+      const url = typeof file === 'object' ? file.url : null
+      if (url) { onOpen({ kind: 'file', url, filename: typeof file === 'object' ? (file.filename || 'archivo') : 'archivo', isImage: colType === 'image' }); return }
+    }
+    if (colType === 'text' && deliv.uploadedText) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Texto enviado', value: deliv.uploadedText, type: 'text' }] }); return }
+    if (colType === 'link' && deliv.uploadedLink) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }] }); return }
+    if (colType === 'formulario') {
+      const formId = deliv.formId
+      const formFields: { label: string; value: any; type: string }[] = []
+      if (typeof formId === 'object' && formId?.fields) {
+        for (const f of formId.fields) { formFields.push({ label: f.label, value: deliv.formResponse?.[f.fieldKey] ?? deliv.formResponse?.[f.label] ?? null, type: f.type || 'text' }) }
+      } else if (deliv.formResponse && typeof deliv.formResponse === 'object') {
+        for (const [k, v] of Object.entries(deliv.formResponse)) { formFields.push({ label: k, value: v, type: 'text' }) }
+      }
+      onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: formFields }); return
+    }
+    const url = deliv.uploadedLink || deliv.actionUrl
+    if (url) window.open(url, '_blank')
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '100%', padding: '0 8px' }}>
+      <button type="button" onClick={handleClick} disabled={!isCompleted} title={isCompleted ? `Ver ${colName}` : cfg.label}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: cfg.bg, color: cfg.color, border: 'none', cursor: isCompleted ? 'pointer' : 'default', fontSize: '0.75rem', fontWeight: 600 }}
+        onMouseEnter={e => { if (isCompleted) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(0.92)' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = '' }}
+      >
+        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
+        {cfg.label}
+      </button>
+      {deliv.dueDate && !isCompleted && <span style={{ fontSize: '0.625rem', color: 'var(--theme-elevation-400)' }}>{fmtDate(deliv.dueDate)}</span>}
+    </div>
+  )
+}
+
+export const CSDashboardClient: React.FC = () => {
+  const [sponsors, setSponsors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [planFilter, setPlanFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [modalData, setModalData] = useState<ModalData | null>(null)
+  const closeModal = useCallback(() => setModalData(null), [])
+
+  useEffect(() => {
+    fetch('/api/sponsors?limit=300&depth=2', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => setSponsors(d.docs || []))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const plans = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const s of sponsors) {
+      const part = activePart(s)
+      const plan = part?.plan
+      if (!plan) continue
+      const id = typeof plan === 'object' ? String(plan.id) : String(plan)
+      map.set(id, normalizePlan(plan))
+    }
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
+  }, [sponsors])
+
+  const filtered = useMemo(() => {
+    return sponsors.filter(s => {
+      const part = activePart(s)
+      if (!part) return false
+      if (search && !s.companyName?.toLowerCase().includes(search.toLowerCase())) return false
+      if (planFilter !== 'all') {
+        const planId = typeof part.plan === 'object' ? String(part.plan.id) : String(part.plan)
+        if (planId !== planFilter) return false
+      }
+      if (statusFilter === 'complete') {
+        const delivs = part.deliverables || []
+        if (!delivs.length || !delivs.every((d: any) => d.status === 'completed')) return false
+      }
+      if (statusFilter === 'pending') {
+        const delivs = part.deliverables || []
+        if (delivs.every((d: any) => d.status === 'completed')) return false
+      }
+      return true
+    })
+  }, [sponsors, search, planFilter, statusFilter])
+
+  const cols = useMemo<DeliverableCol[]>(() => {
+    const map = new Map<string, DeliverableCol>()
+    for (const s of filtered) {
+      const part = activePart(s)
+      for (const d of part?.deliverables || []) {
+        const key = `${d.benefitCategory}|||${d.itemName}`
+        if (!map.has(key)) map.set(key, { key, itemName: d.itemName, benefitCategory: d.benefitCategory || '', type: d.type || 'text' })
+      }
+    }
+    return Array.from(map.values())
+  }, [filtered])
+
+  const rows = useMemo<SponsorRow[]>(() => {
+    return filtered.map(s => {
+      const part = activePart(s)
+      const delivMap: Record<string, any> = {}
+      let total = 0, completed = 0
+      for (const d of part?.deliverables || []) {
+        const key = `${d.benefitCategory}|||${d.itemName}`
+        delivMap[key] = d; total++
+        if (d.status === 'completed') completed++
+      }
+      return { id: s.id, name: s.companyName || 'Sin nombre', planName: normalizePlan(part?.plan), deliverables: delivMap, total, completed }
+    })
+  }, [filtered])
+
+  const stats = useMemo(() => {
+    let totalDelivs = 0, completedDelivs = 0
+    for (const r of rows) { totalDelivs += r.total; completedDelivs += r.completed }
+    return { sponsors: rows.length, completed: completedDelivs, pending: totalDelivs - completedDelivs, pct: totalDelivs ? Math.round(completedDelivs / totalDelivs * 100) : 0 }
+  }, [rows])
+
+  const exportCSV = () => {
+    const headers = ['Sponsor', 'Plan', 'Completados', 'Total', ...cols.map(c => c.itemName)]
+    const csvRows = rows.map(r => [r.name, r.planName, r.completed, r.total, ...cols.map(c => { const d = r.deliverables[c.key]; if (!d) return 'N/A'; if (d.status === 'completed') return 'Enviado'; if (d.status === 'overdue') return 'Vencido'; return 'Pendiente' })])
+    const csv = [headers, ...csvRows].map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `entregables-CTW-${new Date().toISOString().slice(0, 10)}.csv`; a.click()
+  }
+
+  const COL_W = 148
+
+  return (
+    <>
+      <Modal data={modalData} onClose={closeModal} />
+      <div style={{ padding: '1.75rem 2rem', minHeight: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--theme-text)', margin: 0 }}>CS Dashboard</h1>
+            <p style={{ fontSize: '0.875rem', color: 'var(--theme-elevation-500)', margin: '0.25rem 0 0' }}>Entregables por cuenta — vista completa</p>
+          </div>
+          <button type="button" onClick={exportCSV} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.5rem 1rem', background: 'var(--theme-text)', color: 'var(--theme-bg)', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', marginBottom: '1.5rem' }}>
+          {[{ label: 'Cuentas', value: stats.sponsors }, { label: 'Enviados', value: stats.completed, color: '#10b981' }, { label: 'Pendientes', value: stats.pending, color: '#f59e0b' }, { label: 'Completitud', value: `${stats.pct}%` }].map(s => (
+            <div key={s.label} style={{ background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', padding: '0.875rem 1rem' }}>
+              <div style={{ fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--theme-elevation-500)', marginBottom: '4px' }}>{s.label}</div>
+              <div style={{ fontSize: '1.625rem', fontWeight: 700, letterSpacing: '-0.03em', color: s.color || 'var(--theme-text)' }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '180px', maxWidth: '280px' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4, pointerEvents: 'none' }}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" placeholder="Buscar cuenta..." value={search} onChange={e => setSearch(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.75rem 0.45rem 2rem', background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-200)', borderRadius: '6px', color: 'var(--theme-text)', fontSize: '0.875rem', fontFamily: 'inherit', outline: 'none' }} />
+          </div>
+          <select value={planFilter} onChange={e => setPlanFilter(e.target.value)} style={{ padding: '0.45rem 0.75rem', background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-200)', borderRadius: '6px', color: 'var(--theme-text)', fontSize: '0.875rem', fontFamily: 'inherit', cursor: 'pointer', outline: 'none' }}>
+            <option value="all">Todos los planes</option>
+            {plans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {[{ val: 'all', label: 'Todos' }, { val: 'pending', label: 'Con pendientes' }, { val: 'complete', label: '100% completos' }].map(opt => (
+              <button key={opt.val} type="button" onClick={() => setStatusFilter(opt.val)} style={{ padding: '0.35rem 0.875rem', borderRadius: '99px', border: `1px solid ${statusFilter === opt.val ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`, background: statusFilter === opt.val ? 'var(--theme-text)' : 'transparent', color: statusFilter === opt.val ? 'var(--theme-bg)' : 'var(--theme-text)', fontSize: '0.8125rem', fontWeight: statusFilter === opt.val ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}>{opt.label}</button>
+            ))}
+          </div>
+          <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--theme-elevation-500)' }}>{rows.length} cuenta{rows.length !== 1 ? 's' : ''} · {cols.length} entregable{cols.length !== 1 ? 's' : ''}</span>
+        </div>
+
+        {loading ? (
+          <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>Cargando sponsors…</p>
+        ) : rows.length === 0 ? (
+          <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>No hay cuentas que coincidan con los filtros.</p>
+        ) : (
+          <div style={{ border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', overflow: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: `${240 + cols.length * COL_W}px` }}>
+              <thead>
+                <tr style={{ position: 'sticky', top: 0, zIndex: 20 }}>
+                  <th style={{ ...thBase, position: 'sticky', left: 0, zIndex: 25, minWidth: '200px', width: '200px', textAlign: 'left' }}>Cuenta</th>
+                  <th style={{ ...thBase, minWidth: '110px', width: '110px', textAlign: 'left' }}>Plan</th>
+                  <th style={{ ...thBase, minWidth: '90px', width: '90px', textAlign: 'center' }}>Avance</th>
+                  {cols.map(c => (
+                    <th key={c.key} style={{ ...thBase, minWidth: `${COL_W}px`, width: `${COL_W}px`, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: `${COL_W - 16}px`, display: 'block' }} title={c.itemName}>{c.itemName}</span>
+                        {c.benefitCategory && <span style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} title={c.benefitCategory}>{c.benefitCategory}</span>}
+                      </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, ri) => {
+                  const pct = row.total ? Math.round(row.completed / row.total * 100) : 0
+                  return (
+                    <tr key={String(row.id)} style={{ borderTop: '1px solid var(--theme-elevation-100)', background: ri % 2 !== 0 ? 'var(--theme-elevation-50)' : 'var(--theme-bg)' }}>
+                      <td style={{ ...tdBase, position: 'sticky', left: 0, zIndex: 10, background: ri % 2 !== 0 ? 'var(--theme-elevation-50)' : 'var(--theme-bg)', borderRight: '1px solid var(--theme-elevation-150)', padding: '0.75rem 1rem' }}>
+                        <a href={`/admin/collections/sponsors/${row.id}`} style={{ fontWeight: 600, color: 'var(--theme-text)', textDecoration: 'none', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '180px' }} title={row.name}>{row.name}</a>
+                      </td>
+                      <td style={{ ...tdBase, whiteSpace: 'nowrap', color: 'var(--theme-elevation-600)', fontSize: '0.8125rem' }}>{row.planName}</td>
+                      <td style={{ ...tdBase, textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: pct === 100 ? '#065f46' : 'var(--theme-text)' }}>{row.completed}<span style={{ opacity: 0.4, fontWeight: 400 }}>/{row.total}</span></span>
+                          <div style={{ width: '52px', height: '4px', background: 'var(--theme-elevation-150)', borderRadius: '99px', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? '#10b981' : '#f59e0b', borderRadius: '99px' }} />
+                          </div>
+                        </div>
+                      </td>
+                      {cols.map(c => (
+                        <td key={c.key} style={{ ...tdBase, padding: '6px 4px', height: '52px' }}>
+                          <DelivCell deliv={row.deliverables[c.key]} colType={c.type} sponsorName={row.name} colName={c.itemName} onOpen={setModalData} />
+                        </td>
+                      ))}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+const thBase: React.CSSProperties = {
+  padding: '0.625rem 0.875rem',
+  background: 'var(--theme-elevation-100)',
+  borderBottom: '1px solid var(--theme-elevation-200)',
+  fontSize: '0.6875rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--theme-elevation-600)',
+  whiteSpace: 'nowrap',
+}
+
+const tdBase: React.CSSProperties = {
+  padding: '0.625rem 0.875rem',
+  verticalAlign: 'middle',
+  color: 'var(--theme-text)',
+}
