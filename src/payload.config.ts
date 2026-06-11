@@ -50,12 +50,15 @@ export default buildConfig({
       beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
       afterNavLinks: [   '@/components/admin/EntregablesNavLink#EntregablesNavLink',   '@/components/admin/CSDashboardNavLink#CSDashboardNavLink', ],
       views: {
-        entregables: {
-          Component: '@/components/admin/EntregablesView#EntregablesView',
-          path: '/entregables',
-        },
-      },
-    },
+  entregables: {
+    Component: '@/components/admin/EntregablesView#EntregablesView',
+    path: '/entregables',
+  },
+  csDashboard: {
+    Component: '@/components/admin/CSDashboardView#CSDashboardView',
+    path: '/cs-dashboard',
+  },
+},    },
   },
   collections: [Users, Media, Sponsors, Events, Plans, Forms],
   editor: lexicalEditor(),
