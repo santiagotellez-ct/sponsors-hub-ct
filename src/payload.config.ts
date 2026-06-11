@@ -48,7 +48,7 @@ export default buildConfig({
         Icon: '@/components/payload-logo#PayloadIcon',
       },
       beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
-      afterNavLinks: ['@/components/admin/EntregablesNavLink#EntregablesNavLink'],
+      afterNavLinks: [   '@/components/admin/EntregablesNavLink#EntregablesNavLink',   '@/components/admin/CSDashboardNavLink#CSDashboardNavLink', ],
       views: {
         entregables: {
           Component: '@/components/admin/EntregablesView#EntregablesView',
