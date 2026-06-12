@@ -76,7 +76,8 @@ export default buildConfig({
   plugins: [
     s3Storage({
       collections: {
-        media: true, // Esto conecta tu colección Media directamente con Supabase
+        media: true,
+        'piezas-redes-sociales': true,
       },
       bucket: process.env.S3_BUCKET as string,
       config: {
