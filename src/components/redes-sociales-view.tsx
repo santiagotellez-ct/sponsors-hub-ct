@@ -50,7 +50,12 @@ const FORMAT_ICONS: Record<string, React.ReactNode> = {
 
 export function RedesSocialesView({ sponsor }: { sponsor: any }) {
   const activeParticipation = sponsor?.eventParticipations?.find((p: any) => p.isCurrent)
-  const piezas: any[] = activeParticipation?.redesSociales || []
+  const items: any[] = activeParticipation?.redesSociales || []
+
+  // Cada item tiene { pieza: PiezaRedesSociales } (populado con depth:2)
+  const piezas = items
+    .map((item: any) => (typeof item.pieza === 'object' ? item.pieza : null))
+    .filter(Boolean)
 
   if (piezas.length === 0) {
     return (

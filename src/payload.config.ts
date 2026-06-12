@@ -12,6 +12,7 @@ import { Events } from './collections/Events'
 import { Sponsors } from './collections/Sponsors'
 import { Plans } from './collections/Plans'
 import { Forms } from './collections/Forms'
+import { PiezasRedesSociales } from './collections/PiezasRedesSociales'
 
 // Plugin de S3
 import { s3Storage } from '@payloadcms/storage-s3'
@@ -60,7 +61,7 @@ export default buildConfig({
   },
 },    },
   },
-  collections: [Users, Media, Sponsors, Events, Plans, Forms],
+  collections: [Users, Media, Sponsors, Events, Plans, Forms, PiezasRedesSociales],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
