@@ -9,7 +9,7 @@ export const CSDashboardNavLink: React.FC = () => {
 
   return (
     <div style={{ padding: '0 8px', marginTop: '2px' }}>
-      
+      <a
         href="/admin/cs-dashboard"
         style={{
           display: 'flex',
