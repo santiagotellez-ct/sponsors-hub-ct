@@ -30,11 +30,9 @@ export const PiezasRedesSociales: CollectionConfig = {
       name: 'archivo',
       type: 'upload',
       relationTo: 'media',
-      label: 'Archivo',
+      label: 'Archivo (Imagen o PDF)',
       admin: {
-        condition: (_data, siblingData) =>
-          ['imagen', 'pdf'].includes(siblingData?.formatoTipo),
-        description: 'Sube la imagen o PDF de la pieza.',
+        description: 'Sube aquí la imagen o PDF. Deja vacío si el formato es Link.',
       },
     },
     {
@@ -42,8 +40,7 @@ export const PiezasRedesSociales: CollectionConfig = {
       type: 'text',
       label: 'URL del Link',
       admin: {
-        condition: (_data, siblingData) => siblingData?.formatoTipo === 'link',
-        description: 'URL al que se redirigirá el sponsor.',
+        description: 'Solo para formato Link. Deja vacío si subiste un archivo.',
       },
     },
     {
