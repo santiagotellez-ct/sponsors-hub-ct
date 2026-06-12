@@ -74,6 +74,7 @@ export interface Config {
     events: Event;
     plans: Plan;
     forms: Form;
+    'piezas-redes-sociales': PiezasRedesSociale;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -87,6 +88,7 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     plans: PlansSelect<false> | PlansSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
+    'piezas-redes-sociales': PiezasRedesSocialesSelect<false> | PiezasRedesSocialesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -315,6 +317,15 @@ export interface Sponsor {
               id?: string | null;
             }[]
           | null;
+        /**
+         * Asigna piezas creadas en la colección "Piezas de Redes Sociales". El sponsor podrá verlas y descargarlas desde su portal.
+         */
+        redesSociales?:
+          | {
+              pieza: number | PiezasRedesSociale;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -494,6 +505,27 @@ export interface Form {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "piezas-redes-sociales".
+ */
+export interface PiezasRedesSociale {
+  id: number;
+  nombre: string;
+  formatoTipo: 'imagen' | 'pdf' | 'link';
+  /**
+   * Sube la imagen o PDF de la pieza.
+   */
+  archivo?: (number | null) | Media;
+  /**
+   * URL al que se redirigirá el sponsor.
+   */
+  urlLink?: string | null;
+  fechaPublicacion?: string | null;
+  copySugerido?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -539,6 +571,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'forms';
         value: number | Form;
+      } | null)
+    | ({
+        relationTo: 'piezas-redes-sociales';
+        value: number | PiezasRedesSociale;
       } | null);
   globalSlug?: string | null;
   user:
@@ -728,6 +764,12 @@ export interface SponsorsSelect<T extends boolean = true> {
               source?: T;
               id?: T;
             };
+        redesSociales?:
+          | T
+          | {
+              pieza?: T;
+              id?: T;
+            };
         id?: T;
       };
   updatedAt?: T;
@@ -859,6 +901,20 @@ export interface FormsSelect<T extends boolean = true> {
             };
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "piezas-redes-sociales_select".
+ */
+export interface PiezasRedesSocialesSelect<T extends boolean = true> {
+  nombre?: T;
+  formatoTipo?: T;
+  archivo?: T;
+  urlLink?: T;
+  fechaPublicacion?: T;
+  copySugerido?: T;
   updatedAt?: T;
   createdAt?: T;
 }
