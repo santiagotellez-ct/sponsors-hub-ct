@@ -2,18 +2,10 @@ import type { CollectionConfig } from 'payload'
 
 export const PiezasRedesSociales: CollectionConfig = {
   slug: 'piezas-redes-sociales',
-  upload: {
-    mimeTypes: [
-      'image/*',
-      'application/pdf',
-      'image/svg+xml',
-    ],
-  },
   admin: {
     useAsTitle: 'nombre',
     group: 'Configuración',
     defaultColumns: ['nombre', 'formatoTipo', 'fechaPublicacion'],
-    description: 'Para piezas de tipo Imagen o PDF sube el archivo aquí. Para links deja el archivo vacío y rellena el campo URL.',
   },
   fields: [
     {
@@ -35,11 +27,20 @@ export const PiezasRedesSociales: CollectionConfig = {
       ],
     },
     {
+      name: 'archivo',
+      type: 'relationship',
+      relationTo: 'media',
+      label: 'Archivo (Imagen o PDF)',
+      admin: {
+        description: 'Busca un archivo existente o crea uno nuevo con el botón "Create new". Deja vacío si el formato es Link.',
+      },
+    },
+    {
       name: 'urlLink',
       type: 'text',
       label: 'URL del Link',
       admin: {
-        description: 'Solo para formato Link.',
+        description: 'Solo para formato Link. Deja vacío si subiste un archivo.',
       },
     },
     {
