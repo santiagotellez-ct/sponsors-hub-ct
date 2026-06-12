@@ -16,9 +16,9 @@ import {
   LayoutDashboardIcon,
   CheckSquareIcon,
   CalendarDaysIcon,
-  CalendarIcon,
   PackageIcon,
   FileTextIcon,
+  Share2Icon,
 } from 'lucide-react'
 
 export function AppSidebar({
@@ -50,6 +50,7 @@ export function AppSidebar({
       // TODO: volver a habilitar cuando la sección de Calendario esté lista
       // { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
       { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon />, locked: !isLogoCompleted },
+      { title: 'Redes Sociales', url: '/dashboard/redes-sociales', icon: <Share2Icon />, locked: !isLogoCompleted },
       { title: 'Documentos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
     ],
   }

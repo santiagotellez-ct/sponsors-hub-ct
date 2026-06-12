@@ -368,6 +368,53 @@ export const Sponsors: CollectionConfig = {
             { name: 'source', type: 'select', options: [{ label: 'Del Plan', value: 'plan' }, { label: 'Personalizado', value: 'custom' }], defaultValue: 'plan' },
           ],
         },
+
+        {
+          name: 'redesSociales',
+          type: 'array',
+          label: 'Piezas de Redes Sociales',
+          admin: {
+            description:
+              'Piezas que el admin sube para que el sponsor publique en sus redes. El sponsor puede verlas y descargarlas desde su portal.',
+          },
+          fields: [
+            { name: 'nombre', type: 'text', label: 'Nombre de la Pieza', required: true },
+            {
+              name: 'formatoTipo',
+              type: 'select',
+              label: 'Tipo de Formato',
+              defaultValue: 'imagen',
+              required: true,
+              options: [
+                { label: 'Imagen (PNG, SVG, JPG, etc.)', value: 'imagen' },
+                { label: 'PDF', value: 'pdf' },
+                { label: 'Link', value: 'link' },
+              ],
+            },
+            {
+              name: 'archivo',
+              type: 'upload',
+              relationTo: 'media',
+              label: 'Archivo',
+              admin: {
+                condition: (_, siblingData) =>
+                  ['imagen', 'pdf'].includes(siblingData?.formatoTipo),
+                description: 'Sube la imagen o PDF de la pieza.',
+              },
+            },
+            {
+              name: 'urlLink',
+              type: 'text',
+              label: 'URL del Link',
+              admin: {
+                condition: (_, siblingData) => siblingData?.formatoTipo === 'link',
+                description: 'URL al que se redirigirá el sponsor.',
+              },
+            },
+            { name: 'fechaPublicacion', type: 'date', label: 'Fecha Sugerida de Publicación' },
+            { name: 'copySugerido', type: 'textarea', label: 'Copy Sugerido' },
+          ],
+        },
       ],
     },
   ],
