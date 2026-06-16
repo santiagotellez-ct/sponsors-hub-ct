@@ -149,10 +149,36 @@ export const Sponsors: CollectionConfig = {
     {
       name: 'documents',
       type: 'array',
-      label: 'Documentos Administrativos',
+      label: 'Recursos',
       fields: [
-        { name: 'name', type: 'text', label: 'Nombre del Documento' },
-        { name: 'file', type: 'upload', relationTo: 'media', label: 'Archivo' },
+        { name: 'name', type: 'text', label: 'Nombre del Recurso' },
+        {
+          name: 'tipo',
+          type: 'select',
+          label: 'Tipo',
+          defaultValue: 'archivo',
+          options: [
+            { label: 'Archivo', value: 'archivo' },
+            { label: 'URL', value: 'url' },
+          ],
+        },
+        {
+          name: 'file',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'Archivo',
+          admin: {
+            condition: (_, siblingData) => !siblingData?.tipo || siblingData?.tipo === 'archivo',
+          },
+        },
+        {
+          name: 'url',
+          type: 'text',
+          label: 'URL',
+          admin: {
+            condition: (_, siblingData) => siblingData?.tipo === 'url',
+          },
+        },
       ],
     },
 
