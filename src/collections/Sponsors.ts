@@ -401,6 +401,14 @@ export const Sponsors: CollectionConfig = {
               relationTo: 'media',
               label: 'Archivo del Sponsor (Imagen o PDF)',
             },
+            {
+              name: 'fechaPublicacion',
+              type: 'date',
+              label: 'Fecha de Publicación',
+              admin: {
+                description: 'Fecha específica para este sponsor. Sobreescribe la fecha sugerida de la plantilla.',
+              },
+            },
           ],
         },
       ],

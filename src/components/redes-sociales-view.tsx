@@ -83,7 +83,11 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
       const pieza = typeof item.pieza === 'object' ? item.pieza : null
       if (!pieza) return null
       const archivoSponsor = typeof item.archivo === 'object' ? item.archivo : null
-      return { ...pieza, archivo: archivoSponsor }
+      return {
+        ...pieza,
+        archivo: archivoSponsor,
+        fechaPublicacion: item.fechaPublicacion ?? pieza.fechaPublicacion ?? null,
+      }
     })
     .filter(Boolean)
 
