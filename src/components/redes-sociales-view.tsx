@@ -83,11 +83,7 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
       const pieza = typeof item.pieza === 'object' ? item.pieza : null
       if (!pieza) return null
       const archivoSponsor = typeof item.archivo === 'object' ? item.archivo : null
-      return {
-        ...pieza,
-        archivo: archivoSponsor,
-        fechaPublicacion: item.fechaPublicacion ?? pieza.fechaPublicacion ?? null,
-      }
+      return { ...pieza, archivo: archivoSponsor }
     })
     .filter(Boolean)
 
@@ -142,6 +138,14 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
               })
             : null
 
+          const horaPublicacion = pieza.horaPublicacion
+            ? new Date(pieza.horaPublicacion).toLocaleTimeString('es-CO', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })
+            : null
+
           return (
             <Card key={pieza.id || index} className="group hover:border-zinc-900 transition-colors shadow-sm flex flex-col">
               {isImage && archivoUrl ? (
@@ -170,10 +174,14 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
                   </Badge>
                 </div>
 
-                {fechaPublicacion && (
+                {(fechaPublicacion || horaPublicacion) && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <CalendarIcon className="w-3.5 h-3.5 shrink-0" />
-                    <span>Publicar el {fechaPublicacion}</span>
+                    <span>
+                      {fechaPublicacion && `Publicar el ${fechaPublicacion}`}
+                      {fechaPublicacion && horaPublicacion && ' · '}
+                      {horaPublicacion && horaPublicacion}
+                    </span>
                   </div>
                 )}
 

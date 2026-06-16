@@ -5,7 +5,7 @@ export const PiezasRedesSociales: CollectionConfig = {
   admin: {
     useAsTitle: 'nombre',
     group: 'Configuración',
-    defaultColumns: ['nombre', 'formatoTipo', 'fechaPublicacion'],
+    defaultColumns: ['nombre', 'formatoTipo', 'fechaPublicacion', 'horaPublicacion'],
   },
   fields: [
     {
@@ -38,6 +38,17 @@ export const PiezasRedesSociales: CollectionConfig = {
       name: 'fechaPublicacion',
       type: 'date',
       label: 'Fecha Sugerida de Publicación',
+    },
+    {
+      name: 'horaPublicacion',
+      type: 'date',
+      label: 'Hora Sugerida de Publicación',
+      admin: {
+        date: {
+          pickerAppearance: 'timeOnly',
+          displayFormat: 'h:mm a',
+        },
+      },
     },
     {
       name: 'copySugerido',
