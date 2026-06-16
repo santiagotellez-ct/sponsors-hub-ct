@@ -375,15 +375,21 @@ export const Sponsors: CollectionConfig = {
           label: 'Piezas de Redes Sociales',
           admin: {
             description:
-              'Asigna piezas creadas en la colección "Piezas de Redes Sociales". El sponsor podrá verlas y descargarlas desde su portal.',
+              'Selecciona la plantilla de pieza y sube el archivo específico de este sponsor.',
           },
           fields: [
             {
               name: 'pieza',
               type: 'relationship',
               relationTo: 'piezas-redes-sociales',
-              label: 'Pieza',
+              label: 'Plantilla de Pieza',
               required: true,
+            },
+            {
+              name: 'archivo',
+              type: 'upload',
+              relationTo: 'media',
+              label: 'Archivo del Sponsor (Imagen o PDF)',
             },
           ],
         },

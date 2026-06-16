@@ -27,12 +27,6 @@ export const PiezasRedesSociales: CollectionConfig = {
       ],
     },
     {
-      name: 'archivo',
-      type: 'upload',
-      relationTo: 'media',
-      label: 'Archivo (Imagen o PDF)',
-    },
-    {
       name: 'urlLink',
       type: 'text',
       label: 'URL del Link',

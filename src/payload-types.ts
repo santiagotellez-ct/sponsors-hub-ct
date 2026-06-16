@@ -318,11 +318,12 @@ export interface Sponsor {
             }[]
           | null;
         /**
-         * Asigna piezas creadas en la colección "Piezas de Redes Sociales". El sponsor podrá verlas y descargarlas desde su portal.
+         * Selecciona la plantilla de pieza y sube el archivo específico de este sponsor.
          */
         redesSociales?:
           | {
               pieza: number | PiezasRedesSociale;
+              archivo?: (number | null) | Media;
               id?: string | null;
             }[]
           | null;
@@ -511,7 +512,6 @@ export interface PiezasRedesSociale {
   id: number;
   nombre: string;
   formatoTipo: 'imagen' | 'pdf' | 'link';
-  archivo?: (number | null) | Media;
   /**
    * Solo para formato Link.
    */
@@ -765,6 +765,7 @@ export interface SponsorsSelect<T extends boolean = true> {
           | T
           | {
               pieza?: T;
+              archivo?: T;
               id?: T;
             };
         id?: T;
@@ -908,7 +909,6 @@ export interface FormsSelect<T extends boolean = true> {
 export interface PiezasRedesSocialesSelect<T extends boolean = true> {
   nombre?: T;
   formatoTipo?: T;
-  archivo?: T;
   urlLink?: T;
   fechaPublicacion?: T;
   copySugerido?: T;

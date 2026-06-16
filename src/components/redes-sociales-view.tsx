@@ -52,9 +52,14 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
   const activeParticipation = sponsor?.eventParticipations?.find((p: any) => p.isCurrent)
   const items: any[] = activeParticipation?.redesSociales || []
 
-  // Cada item tiene { pieza: PiezaRedesSociales } (populado con depth:2)
+  // Cada item tiene { pieza: plantilla, archivo: archivo específico del sponsor }
   const piezas = items
-    .map((item: any) => (typeof item.pieza === 'object' ? item.pieza : null))
+    .map((item: any) => {
+      const pieza = typeof item.pieza === 'object' ? item.pieza : null
+      if (!pieza) return null
+      const archivoSponsor = typeof item.archivo === 'object' ? item.archivo : null
+      return { ...pieza, archivo: archivoSponsor }
+    })
     .filter(Boolean)
 
   if (piezas.length === 0) {
