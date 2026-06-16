@@ -6,7 +6,6 @@ export const PiezasRedesSociales: CollectionConfig = {
     useAsTitle: 'nombre',
     group: 'Configuración',
     defaultColumns: ['nombre', 'formatoTipo', 'fechaPublicacion'],
-    description: '⚠️ Para subir el archivo: primero llena el Nombre y guarda (Save). Luego sube el archivo en la pieza recién creada.',
   },
   fields: [
     {
@@ -32,10 +31,6 @@ export const PiezasRedesSociales: CollectionConfig = {
       type: 'upload',
       relationTo: 'media',
       label: 'Archivo (Imagen o PDF)',
-      admin: {
-        description: 'Disponible solo al editar una pieza ya guardada. Si ves este campo, puedes subir el archivo directamente.',
-        condition: (data) => Boolean(data?.id),
-      },
     },
     {
       name: 'urlLink',

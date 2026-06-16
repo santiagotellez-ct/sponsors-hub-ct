@@ -511,12 +511,9 @@ export interface PiezasRedesSociale {
   id: number;
   nombre: string;
   formatoTipo: 'imagen' | 'pdf' | 'link';
-  /**
-   * Busca un archivo existente o crea uno nuevo con el botón "Create new". Deja vacío si el formato es Link.
-   */
   archivo?: (number | null) | Media;
   /**
-   * Solo para formato Link. Deja vacío si subiste un archivo.
+   * Solo para formato Link.
    */
   urlLink?: string | null;
   fechaPublicacion?: string | null;
