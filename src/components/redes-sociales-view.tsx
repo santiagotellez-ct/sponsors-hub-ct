@@ -14,6 +14,7 @@ import {
   ImageIcon,
   FileTextIcon,
   LinkIcon,
+  XIcon,
 } from 'lucide-react'
 
 function CopyButton({ text }: { text: string }) {
@@ -36,6 +37,29 @@ function CopyButton({ text }: { text: string }) {
   )
 }
 
+function ImageModal({ url, nombre, onClose }: { url: string; nombre: string; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative max-w-lg w-full bg-white rounded-2xl overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-1 transition-colors"
+        >
+          <XIcon className="w-4 h-4" />
+        </button>
+        <img src={url} alt={nombre} className="w-full h-auto max-h-[70vh] object-contain" />
+        <div className="px-4 py-3 text-sm font-medium text-zinc-700">{nombre}</div>
+      </div>
+    </div>
+  )
+}
+
 const FORMAT_LABELS: Record<string, string> = {
   imagen: 'Imagen',
   pdf: 'PDF',
@@ -49,10 +73,11 @@ const FORMAT_ICONS: Record<string, React.ReactNode> = {
 }
 
 export function RedesSocialesView({ sponsor }: { sponsor: any }) {
+  const [modalImg, setModalImg] = useState<{ url: string; nombre: string } | null>(null)
+
   const activeParticipation = sponsor?.eventParticipations?.find((p: any) => p.isCurrent)
   const items: any[] = activeParticipation?.redesSociales || []
 
-  // Cada item tiene { pieza: plantilla, archivo: archivo específico del sponsor }
   const piezas = items
     .map((item: any) => {
       const pieza = typeof item.pieza === 'object' ? item.pieza : null
@@ -85,6 +110,10 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
 
   return (
     <div className="space-y-8 pb-10">
+      {modalImg && (
+        <ImageModal url={modalImg.url} nombre={modalImg.nombre} onClose={() => setModalImg(null)} />
+      )}
+
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Redes Sociales</h1>
         <p className="text-muted-foreground mt-2">
@@ -111,15 +140,18 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
 
           return (
             <Card key={pieza.id || index} className="group hover:border-zinc-900 transition-colors shadow-sm flex flex-col">
-              {/* Thumbnail de imagen */}
               {isImage && archivoUrl ? (
-                <div className="relative overflow-hidden rounded-t-xl bg-muted aspect-video">
+                <button
+                  type="button"
+                  onClick={() => setModalImg({ url: archivoUrl, nombre: pieza.nombre })}
+                  className="relative overflow-hidden rounded-t-xl bg-muted aspect-video w-full cursor-zoom-in"
+                >
                   <img
                     src={archivoUrl}
                     alt={pieza.nombre}
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
-                </div>
+                </button>
               ) : (
                 <div className="flex items-center justify-center aspect-video bg-muted/40 rounded-t-xl">
                   {FORMAT_ICONS[formato]}
@@ -127,7 +159,6 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
               )}
 
               <CardContent className="p-5 flex flex-col flex-1 gap-3">
-                {/* Nombre y badge de formato */}
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold text-base leading-snug line-clamp-2">{pieza.nombre}</h3>
                   <Badge variant="secondary" className="shrink-0 text-xs">
@@ -135,7 +166,6 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
                   </Badge>
                 </div>
 
-                {/* Fecha sugerida de publicación */}
                 {fechaPublicacion && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                     <CalendarIcon className="w-3.5 h-3.5 shrink-0" />
@@ -143,7 +173,6 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
                   </div>
                 )}
 
-                {/* Copy sugerido */}
                 {pieza.copySugerido && (
                   <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground flex-1">
                     <div className="flex items-start justify-between gap-1">
@@ -153,7 +182,6 @@ export function RedesSocialesView({ sponsor }: { sponsor: any }) {
                   </div>
                 )}
 
-                {/* Botón de acción */}
                 <div className="mt-auto pt-1">
                   {(isImage || isPdf) && archivoUrl ? (
                     <Button

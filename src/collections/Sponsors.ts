@@ -95,6 +95,16 @@ export const Sponsors: CollectionConfig = {
   },
   auth: true,
   fields: [
+    {
+      name: 'scrollToBottom',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/admin/ScrollToBottomButton#ScrollToBottomButton',
+        },
+      },
+    },
+
     /* ==========================================
        CAMPOS FANTASMA (Para las columnas de Admin)
        ========================================== */
