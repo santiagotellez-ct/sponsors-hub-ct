@@ -1,3 +1,4 @@
+import { ScrollToBottomButton as ScrollToBottomButton_118028c6af23567c6db18742bfe84103 } from '@/components/admin/ScrollToBottomButton'
 import { SponsorRelatedItemsPicker as SponsorRelatedItemsPicker_8ca11e70cc8eac5f23c011f65a77d6ab } from '@/components/admin/SponsorRelatedItemsPicker'
 import { FormResponseViewer as FormResponseViewer_de69bab4d59316620c3c95876f90a626 } from '@/components/admin/FormResponseViewer'
 import { RelatedItemsPicker as RelatedItemsPicker_71aaa352492582fc912123984d635a57 } from '@/components/admin/RelatedItemsPicker'
@@ -13,6 +14,7 @@ import { CSDashboardView as CSDashboardView_0c8e745deacc1b4e1c6f03cde08b80a2 } f
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 export const importMap = {
+  "@/components/admin/ScrollToBottomButton#ScrollToBottomButton": ScrollToBottomButton_118028c6af23567c6db18742bfe84103,
   "@/components/admin/SponsorRelatedItemsPicker#SponsorRelatedItemsPicker": SponsorRelatedItemsPicker_8ca11e70cc8eac5f23c011f65a77d6ab,
   "@/components/admin/FormResponseViewer#FormResponseViewer": FormResponseViewer_de69bab4d59316620c3c95876f90a626,
   "@/components/admin/RelatedItemsPicker#RelatedItemsPicker": RelatedItemsPicker_71aaa352492582fc912123984d635a57,

@@ -219,7 +219,9 @@ export interface Sponsor {
   documents?:
     | {
         name?: string | null;
+        tipo?: ('archivo' | 'url') | null;
         file?: (number | null) | Media;
+        url?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -517,6 +519,7 @@ export interface PiezasRedesSociale {
    */
   urlLink?: string | null;
   fechaPublicacion?: string | null;
+  horaPublicacion?: string | null;
   copySugerido?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -695,7 +698,9 @@ export interface SponsorsSelect<T extends boolean = true> {
     | T
     | {
         name?: T;
+        tipo?: T;
         file?: T;
+        url?: T;
         id?: T;
       };
   eventParticipations?:
@@ -911,6 +916,7 @@ export interface PiezasRedesSocialesSelect<T extends boolean = true> {
   formatoTipo?: T;
   urlLink?: T;
   fechaPublicacion?: T;
+  horaPublicacion?: T;
   copySugerido?: T;
   updatedAt?: T;
   createdAt?: T;
