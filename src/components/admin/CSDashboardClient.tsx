@@ -134,13 +134,18 @@ function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: an
   const isCompleted = deliv.status === 'completed'
   const handleClick = () => {
     if (!isCompleted) return
-    if (['image', 'document'].includes(colType) && deliv.uploadedFile) {
+    // Archivo subido (imagen, documento o direct con archivo)
+    if (deliv.uploadedFile) {
       const file = deliv.uploadedFile
       const url = typeof file === 'object' ? file.url : null
-      if (url) { onOpen({ kind: 'file', url, filename: typeof file === 'object' ? (file.filename || 'archivo') : 'archivo', isImage: colType === 'image' }); return }
+      if (url) {
+        const isImg = colType === 'image' || /\.(png|jpe?g|gif|webp|svg)$/i.test(file.filename || '')
+        onOpen({ kind: 'file', url, filename: typeof file === 'object' ? (file.filename || 'archivo') : 'archivo', isImage: isImg })
+        return
+      }
     }
     if (colType === 'text' && deliv.uploadedText) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Texto enviado', value: deliv.uploadedText, type: 'text' }] }); return }
-    if (colType === 'link' && deliv.uploadedLink) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }] }); return }
+    if (deliv.uploadedLink) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }] }); return }
     if (colType === 'formulario') {
       const formId = deliv.formId
       const formFields: { label: string; value: any; type: string }[] = []
@@ -151,18 +156,19 @@ function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: an
       }
       onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: formFields }); return
     }
-    const url = deliv.uploadedLink || deliv.actionUrl
+    const url = deliv.actionUrl
     if (url) window.open(url, '_blank')
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '100%', padding: '0 8px' }}>
-      <button type="button" onClick={handleClick} disabled={!isCompleted} title={isCompleted ? `Ver ${colName}` : cfg.label}
+      <button type="button" onClick={handleClick} disabled={!isCompleted} title={isCompleted ? `Ver entregable: ${colName}` : cfg.label}
         style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: cfg.bg, color: cfg.color, border: 'none', cursor: isCompleted ? 'pointer' : 'default', fontSize: '0.75rem', fontWeight: 600 }}
         onMouseEnter={e => { if (isCompleted) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(0.92)' }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = '' }}
       >
         <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
         {cfg.label}
+        {isCompleted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
       </button>
       {deliv.dueDate && !isCompleted && <span style={{ fontSize: '0.625rem', color: 'var(--theme-elevation-400)' }}>{fmtDate(deliv.dueDate)}</span>}
     </div>
