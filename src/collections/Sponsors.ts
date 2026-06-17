@@ -2,6 +2,7 @@ import type { CollectionConfig, CollectionBeforeChangeHook } from 'payload'
 import { Resend } from 'resend'
 import WelcomeEmail from '../emails/WelcomeEmail'
 import EvidenceUploadedEmail from '../emails/EvidenceUploadedEmail'
+import NuevoContenidoEmail from '../emails/NuevoContenidoEmail'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -524,7 +525,59 @@ export const Sponsors: CollectionConfig = {
           }
         }
 
-        // 3. WEBHOOK HACIA N8N (Sincronización con Notion)
+        // 3. NOTIFICACIONES DE NUEVO RECURSO / NUEVA PIEZA DE REDES SOCIALES
+        if (operation === 'update' && previousDoc) {
+          try {
+            const contactEmail = doc.contactInfo?.corporateEmail || doc.email
+            if (contactEmail) {
+              // Detectar nuevo recurso
+              const currentDocs = doc.documents || []
+              const prevDocs = previousDoc.documents || []
+              if (currentDocs.length > prevDocs.length) {
+                const nuevoRecurso = currentDocs[currentDocs.length - 1]
+                await resend.emails.send({
+                  from: 'Colombia Tech <hola@sponsor.colombiatechweek.co>',
+                  to: contactEmail,
+                  subject: 'Tienes un nuevo recurso disponible | Sponsor Hub',
+                  react: NuevoContenidoEmail({
+                    companyName: doc.companyName,
+                    tipo: 'recurso',
+                    nombreContenido: nuevoRecurso?.name || undefined,
+                  }),
+                })
+                console.log(`Correo de nuevo recurso enviado a ${contactEmail}`)
+              }
+
+              // Detectar nueva pieza de redes sociales (en cualquier participación)
+              const currentParts = doc.eventParticipations || []
+              const prevParts = previousDoc.eventParticipations || []
+              for (let i = 0; i < currentParts.length; i++) {
+                const currPiezas = currentParts[i]?.redesSociales || []
+                const prevPiezas = prevParts[i]?.redesSociales || []
+                if (currPiezas.length > prevPiezas.length) {
+                  const nuevaPieza = currPiezas[currPiezas.length - 1]
+                  const piezaObj = typeof nuevaPieza?.pieza === 'object' ? nuevaPieza.pieza : null
+                  await resend.emails.send({
+                    from: 'Colombia Tech <hola@sponsor.colombiatechweek.co>',
+                    to: contactEmail,
+                    subject: 'Tienes una nueva pieza de redes sociales | Sponsor Hub',
+                    react: NuevoContenidoEmail({
+                      companyName: doc.companyName,
+                      tipo: 'pieza',
+                      nombreContenido: piezaObj?.nombre || undefined,
+                    }),
+                  })
+                  console.log(`Correo de nueva pieza enviado a ${contactEmail}`)
+                  break
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error enviando notificación de nuevo contenido:', error)
+          }
+        }
+
+        // 4. WEBHOOK HACIA N8N (Sincronización con Notion)
         if (
           operation === 'update' &&
           doc.contactInfo?.fullName &&
