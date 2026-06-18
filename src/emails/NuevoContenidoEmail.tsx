@@ -136,9 +136,9 @@ const buttonContainer = {
   marginTop: '16px',
 }
 const button = {
-  backgroundColor: '#A3E635',
+  backgroundColor: '#09090b',
   borderRadius: '8px',
-  color: '#000000',
+  color: '#ffffff',
   fontSize: '15px',
   fontWeight: '600',
   textDecoration: 'none',

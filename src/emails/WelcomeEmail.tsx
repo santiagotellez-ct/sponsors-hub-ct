@@ -168,9 +168,9 @@ const buttonContainer = {
 }
 
 const button = {
-  backgroundColor: '#A3E635', // Verde Lima
+  backgroundColor: '#09090b',
   borderRadius: '8px',
-  color: '#000000', // Texto negro para contraste
+  color: '#ffffff',
   fontSize: '15px',
   fontWeight: '600',
   textDecoration: 'none',
