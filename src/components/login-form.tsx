@@ -89,12 +89,14 @@ export function LoginForm({ className, ...props }: React.ComponentProps<'div'>) 
           <Field>
             <div className="flex items-center justify-between w-full">
               <FieldLabel htmlFor="password">Contraseña</FieldLabel>
+              {/* TODO: implementar recuperación de contraseña
               <a
                 href="#"
                 className="text-sm underline-offset-4 hover:underline text-muted-foreground"
               >
                 ¿Olvidó su contraseña?
               </a>
+              */}
             </div>
             <Input
               id="password"
