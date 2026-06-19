@@ -51,7 +51,7 @@ export function AppSidebar({
       // { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
       { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon />, locked: !isLogoCompleted },
       { title: 'Redes Sociales', url: '/dashboard/redes-sociales', icon: <Share2Icon />, locked: !isLogoCompleted },
-      { title: 'Documentos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
+      { title: 'Recursos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
     ],
   }
 

@@ -9,9 +9,21 @@ export const Media: CollectionConfig = {
     mimeTypes: [
       'image/*',
       'application/pdf',
-      'application/postscript',        // .ai, .eps, .ps
-      'application/illustrator',        // .ai (variante)
-      'application/vnd.adobe.illustrator', // .ai (Adobe específico)
+      'application/postscript',
+      'application/illustrator',
+      'application/vnd.adobe.illustrator',
+      // Documentos Office
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      // Otros
+      'text/plain',
+      'text/csv',
+      'application/zip',
+      'application/x-zip-compressed',
     ],
   },
   access: {
