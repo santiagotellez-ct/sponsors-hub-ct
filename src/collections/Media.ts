@@ -27,7 +27,7 @@ export const Media: CollectionConfig = {
     ],
   },
   access: {
-    read: () => true, // Para que el frontend pueda leer los archivos
+    read: () => true,
   },
   fields: [
     {
@@ -39,12 +39,32 @@ export const Media: CollectionConfig = {
     },
   ],
   hooks: {
+    beforeOperation: [
+      ({ args, operation }) => {
+        if ((operation === 'create' || operation === 'update') && args.req?.file?.name) {
+          const original = args.req.file.name as string
+          const dotIndex = original.lastIndexOf('.')
+          const ext = dotIndex !== -1 ? original.slice(dotIndex + 1) : ''
+          const nameWithoutExt = dotIndex !== -1 ? original.slice(0, dotIndex) : original
+
+          // Supabase S3 rejects filenames with special/unicode characters (ñ, ×, ·, spaces, etc.)
+          const sanitized = nameWithoutExt
+            .normalize('NFD')
+            .replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-zA-Z0-9]/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-|-$/g, '')
+            .toLowerCase()
+
+          args.req.file.name = ext ? `${sanitized}.${ext}` : sanitized
+        }
+        return args
+      },
+    ],
     beforeChange: [
       ({ data }) => {
-        // Si el campo alt está vacío y hay un archivo subiéndose
         if (!data.alt && data.filename) {
           const filename = data.filename as string
-          // Removemos la extensión del archivo (ej. 'logo-empresa.png' -> 'logo-empresa')
           const nameWithoutExt = filename.split('.').slice(0, -1).join('.') || filename
           data.alt = nameWithoutExt
         }

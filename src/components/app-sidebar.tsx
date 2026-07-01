@@ -29,14 +29,6 @@ export function AppSidebar({
   const sponsorEmail = sponsor?.contactInfo?.corporateEmail || 'correo@empresa.com'
   const sponsorLogoUrl = typeof sponsor?.logo === 'object' ? sponsor?.logo?.url : ''
 
-  const activeParticipation = sponsor?.eventParticipations?.find((p: any) => p.isCurrent)
-  const deliverables = activeParticipation?.deliverables || []
-  const logoDeliverables = deliverables.filter((d: any) =>
-    d.itemName.toLowerCase().includes('logo'),
-  )
-  const isLogoCompleted =
-    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
-
   const data = {
     user: {
       name: sponsorName,
@@ -44,14 +36,12 @@ export function AppSidebar({
       avatar: sponsorLogoUrl,
     },
     navMain: [
-      { title: 'Dashboard', url: '/dashboard', icon: <LayoutDashboardIcon />, locked: !isLogoCompleted },
-      { title: 'Entregables', url: '/dashboard/entregables', icon: <CheckSquareIcon />, locked: false },
-      { title: 'Reuniones', url: '/dashboard/reuniones', icon: <CalendarDaysIcon />, locked: !isLogoCompleted },
-      // TODO: volver a habilitar cuando la sección de Calendario esté lista
-      // { title: 'Calendario', url: '/dashboard/calendario', icon: <CalendarIcon />, locked: !isLogoCompleted },
-      { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon />, locked: !isLogoCompleted },
-      { title: 'Redes Sociales', url: '/dashboard/redes-sociales', icon: <Share2Icon />, locked: !isLogoCompleted },
-      { title: 'Recursos', url: '/dashboard/documentos', icon: <FileTextIcon />, locked: !isLogoCompleted },
+      { title: 'Dashboard', url: '/dashboard', icon: <LayoutDashboardIcon /> },
+      { title: 'Entregables', url: '/dashboard/entregables', icon: <CheckSquareIcon /> },
+      { title: 'Reuniones', url: '/dashboard/reuniones', icon: <CalendarDaysIcon /> },
+      { title: 'Mis Planes', url: '/dashboard/planes', icon: <PackageIcon /> },
+      { title: 'Redes Sociales', url: '/dashboard/redes-sociales', icon: <Share2Icon /> },
+      { title: 'Recursos', url: '/dashboard/documentos', icon: <FileTextIcon /> },
     ],
   }
 

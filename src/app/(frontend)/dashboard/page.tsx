@@ -8,7 +8,6 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { SiteHeader } from '@/components/site-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { OnboardingForm } from '@/components/onboarding-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
@@ -55,30 +54,7 @@ export default async function DashboardPage() {
     depth: 2,
   })
 
-  // 1. VALIDACIÓN ONBOARDING
-  const hasLogo = !!sponsor.logo
-  const hasContactInfo =
-    sponsor.contactInfo?.fullName && sponsor.contactInfo?.whatsapp && sponsor.contactInfo?.linkedin
   const activeParticipation = sponsor.eventParticipations?.find((p: any) => p.isCurrent)
-  const hasStrategy =
-    activeParticipation?.strategy?.description &&
-    activeParticipation?.strategy?.eventObjectives &&
-    activeParticipation?.strategy?.brandDifferentiator
-
-  const needsOnboarding = !hasLogo || !hasContactInfo || !hasStrategy
-
-  // 1.5 VALIDACIÓN DE ENTREGABLES DEL LOGO
-  const deliverablesAuth = activeParticipation?.deliverables || []
-  const logoDeliverables = deliverablesAuth.filter((d: any) =>
-    d.itemName.toLowerCase().includes('logo'),
-  )
-  const isLogoCompleted =
-    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
-
-  // Redirigir si no ha completado los entregables de logo
-  if (!needsOnboarding && !isLogoCompleted) {
-    redirect('/dashboard/entregables')
-  }
 
   // 2. EJECUCIÓN DEL PATROCINIO
   const benefitItems = activeParticipation?.benefitItems || []
@@ -162,15 +138,12 @@ export default async function DashboardPage() {
       }
     }
 
-    // Todo lo que esté antes del activo lo podemos marcar completado, y todo lo que esté después locked (opcional)
     let finalActiveSeen = false
     moments.forEach((m) => {
       if (m.status === 'active') {
         finalActiveSeen = true
       } else if (!finalActiveSeen) {
         m.status = 'completed'
-      } else {
-        m.status = 'locked'
       }
     })
   } else {
@@ -206,22 +179,6 @@ export default async function DashboardPage() {
             <AppSidebar sponsor={sponsor} />
             <SidebarInset>
               <div className="flex flex-1 flex-col gap-4 p-4 lg:p-8 max-w-7xl mx-auto w-full pb-20">
-                {needsOnboarding ? (
-                  <div className="max-w-3xl mx-auto w-full mt-4 mb-20">
-                    <div className="mb-6">
-                      <h1 className="text-3xl font-bold tracking-tight">
-                        Bienvenido a Sponsor Hub
-                      </h1>
-                      <p className="text-muted-foreground mt-2">
-                        Para habilitar su panel de control, por favor complete la información básica
-                        de su empresa.
-                      </p>
-                    </div>
-                    <div className="p-6 md:p-8 border rounded-xl bg-card text-card-foreground shadow-sm">
-                      <OnboardingForm sponsor={sponsor} />
-                    </div>
-                  </div>
-                ) : (
                   <div className="w-full flex flex-col gap-8">
                     {/* GREETING NUEVO DISEÑO */}
                     <div>
@@ -766,7 +723,6 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                   </div>
-                )}
               </div>
             </SidebarInset>
           </div>

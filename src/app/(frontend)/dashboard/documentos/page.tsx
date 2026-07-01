@@ -9,8 +9,6 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { DocumentosView } from '@/components/documentos-view'
 
-export const description = 'Documentos Administrativos'
-
 export default async function DocumentosPage() {
   const payload = await getPayload({ config: configPromise })
   const cookieStore = await cookies()
@@ -24,11 +22,20 @@ export default async function DocumentosPage() {
 
   if (!user || user.collection !== 'sponsors') redirect('/')
 
-  const sponsor = await payload.findByID({
-    collection: 'sponsors',
-    id: user.id,
-    depth: 2,
-  })
+  const [sponsor, globalResourcesResult] = await Promise.all([
+    payload.findByID({
+      collection: 'sponsors',
+      id: user.id,
+      depth: 2,
+    }),
+    payload.find({
+      collection: 'recursos-globales',
+      where: {
+        sponsors: { in: [user.id] },
+      },
+      depth: 1,
+    }),
+  ])
 
   return (
     <TooltipProvider>
@@ -39,7 +46,7 @@ export default async function DocumentosPage() {
             <AppSidebar sponsor={sponsor} />
             <SidebarInset>
               <div className="flex flex-1 flex-col gap-4 p-4 lg:p-8 max-w-6xl mx-auto w-full">
-                <DocumentosView sponsor={sponsor} />
+                <DocumentosView sponsor={sponsor} globalResources={globalResourcesResult.docs} />
               </div>
             </SidebarInset>
           </div>

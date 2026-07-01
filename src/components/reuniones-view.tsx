@@ -129,7 +129,6 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
             meeting.scheduledDate &&
             new Date(meeting.scheduledDate).getTime() < nowTime
           const isActive = index === currentActiveIndex
-          const isLocked = index > currentActiveIndex
 
           // Detectamos si el texto en el campo platform es un link
           const hasPlatform = !!meeting.platform
@@ -157,7 +156,7 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
               </div>
 
               <Card
-                className={`w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] shadow-sm transition-opacity ${isLocked ? 'opacity-50 grayscale-[50%]' : ''}`}
+                className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] shadow-sm transition-opacity"
               >
                 <CardHeader className="bg-muted/30 pb-4 border-b">
                   <div className="flex justify-between items-start gap-4">
@@ -189,11 +188,6 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
                     )}
                     {isActive && !isScheduled && (
                       <Badge className="bg-blue-100 text-blue-700 border-0">Requiere Acción</Badge>
-                    )}
-                    {isLocked && (
-                      <Badge variant="secondary" className="bg-muted-foreground/20">
-                        Bloqueada
-                      </Badge>
                     )}
                   </div>
                 </CardHeader>
@@ -303,11 +297,6 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
                     <p className="text-sm text-muted-foreground">
                       El enlace de agenda (Calendly) aún no ha sido configurado por el
                       administrador.
-                    </p>
-                  )}
-                  {isLocked && (
-                    <p className="text-sm text-muted-foreground italic">
-                      Esta sesión se habilitará una vez se concluya la fase anterior.
                     </p>
                   )}
                 </CardContent>

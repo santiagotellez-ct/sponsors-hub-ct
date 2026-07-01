@@ -75,6 +75,7 @@ export interface Config {
     plans: Plan;
     forms: Form;
     'piezas-redes-sociales': PiezasRedesSociale;
+    'recursos-globales': RecursosGlobale;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -89,6 +90,7 @@ export interface Config {
     plans: PlansSelect<false> | PlansSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'piezas-redes-sociales': PiezasRedesSocialesSelect<false> | PiezasRedesSocialesSelect<true>;
+    'recursos-globales': RecursosGlobalesSelect<false> | RecursosGlobalesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -525,6 +527,29 @@ export interface PiezasRedesSociale {
   createdAt: string;
 }
 /**
+ * Recursos compartidos que se asignan a uno o varios sponsors a la vez.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recursos-globales".
+ */
+export interface RecursosGlobale {
+  id: number;
+  nombre: string;
+  descripcion?: string | null;
+  tipo: 'archivo' | 'url';
+  file?: (number | null) | Media;
+  /**
+   * Introduce la URL completa (ej: https://drive.google.com/...)
+   */
+  url?: string | null;
+  /**
+   * Selecciona los sponsors que verán este recurso en su sección de Recursos. El recurso aparecerá automáticamente en su dashboard.
+   */
+  sponsors?: (number | Sponsor)[] | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -575,6 +600,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'piezas-redes-sociales';
         value: number | PiezasRedesSociale;
+      } | null)
+    | ({
+        relationTo: 'recursos-globales';
+        value: number | RecursosGlobale;
       } | null);
   globalSlug?: string | null;
   user:
@@ -918,6 +947,20 @@ export interface PiezasRedesSocialesSelect<T extends boolean = true> {
   fechaPublicacion?: T;
   horaPublicacion?: T;
   copySugerido?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "recursos-globales_select".
+ */
+export interface RecursosGlobalesSelect<T extends boolean = true> {
+  nombre?: T;
+  descripcion?: T;
+  tipo?: T;
+  file?: T;
+  url?: T;
+  sponsors?: T;
   updatedAt?: T;
   createdAt?: T;
 }

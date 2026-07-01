@@ -86,13 +86,6 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
   )
   const orderedCategories = [...new Set([...planCategories, ...customCategories])]
 
-  // Logo check (gateway de desbloqueo)
-  const logoDeliverables = participationDeliverables.filter((d: any) =>
-    d.itemName.toLowerCase().includes('logo'),
-  )
-  const isLogoCompleted =
-    logoDeliverables.length === 0 || logoDeliverables.every((d: any) => d.status === 'completed')
-
   const handleSubmitDeliverable = async (
     deliverableId: string,
     relatedItemNames: { itemName: string }[],
@@ -181,22 +174,9 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
 
       if (!updateRes.ok) throw new Error('Error actualizando la base de datos')
 
-      const updatedLogoDeliverables = currentPart.deliverables.filter((d: any) =>
-        d.itemName.toLowerCase().includes('logo'),
-      )
-      const isNowLogoCompleted =
-        updatedLogoDeliverables.length === 0 ||
-        updatedLogoDeliverables.every((d: any) => d.status === 'completed')
-
       setExpandedDeliverable(null)
       setActiveFormDeliverable(null)
-
-      if (!isLogoCompleted && isNowLogoCompleted) {
-        router.push('/dashboard')
-        router.refresh()
-      } else {
-        router.refresh()
-      }
+      router.refresh()
     } catch (error) {
       console.error(error)
       alert('Hubo un error al guardar el entregable. Revise la consola.')
@@ -401,36 +381,20 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
   let totalDeliverablesCount = 0
   let completedDeliverablesCount = 0
   let pendingDeliverablesCount = 0
-  let blockedDeliverablesCount = 0
-  let localIsPreviousComplete = true
 
   orderedCategories.forEach((categoryName: string) => {
     const blockDeliverables = participationDeliverables.filter(
       (d: any) => d.benefitCategory === categoryName,
     )
-    const blockItems = participationItems.filter(
-      (item: any) => item.benefitCategory === categoryName,
-    )
-
-    const isBlockUnlocked = !isLogoCompleted
-      ? blockDeliverables.some((d: any) => d.itemName.toLowerCase().includes('logo'))
-      : localIsPreviousComplete
-
-    const isCurrentBlockComplete =
-      blockItems.length > 0 && blockItems.every((item: any) => item.status === 'completed')
 
     blockDeliverables.forEach((d: any) => {
       totalDeliverablesCount++
       if (d.status === 'completed') {
         completedDeliverablesCount++
-      } else if (d.unlockDate ? !isDateUnlocked(d.unlockDate) : !isBlockUnlocked) {
-        blockedDeliverablesCount++
       } else {
         pendingDeliverablesCount++
       }
     })
-
-    localIsPreviousComplete = isCurrentBlockComplete
   })
 
   const completedPercent =
