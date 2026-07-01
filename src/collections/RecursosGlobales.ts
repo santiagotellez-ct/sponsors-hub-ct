@@ -190,5 +190,14 @@ export const RecursosGlobales: CollectionConfig = {
           'Selecciona los sponsors. El recurso se añadirá automáticamente en su sección de Recursos.',
       },
     },
+    {
+      name: 'notifySponsors',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/admin/RecursosGlobalesNotify#RecursosGlobalesNotify',
+        },
+      },
+    },
   ],
 }
