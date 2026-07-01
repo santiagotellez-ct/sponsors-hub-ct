@@ -6,13 +6,13 @@ import { useDocumentInfo } from '@payloadcms/ui'
 export function RecursosGlobalesNotify() {
   const [showModal, setShowModal] = useState(false)
   const [subject, setSubject] = useState('Tienes un nuevo recurso disponible | Sponsor Hub')
+  const [body, setBody] = useState('El equipo de Colombia Tech ha añadido un nuevo recurso a tu cuenta. Puedes consultarlo y descargarlo desde la sección Recursos de tu portal.')
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
   const { id, savedDocumentData } = useDocumentInfo()
 
-  // Detectar cuando se guarda el documento (savedDocumentData.updatedAt cambia)
   const lastSavedAtRef = useRef<string | null>(null)
   const initializedRef = useRef(false)
 
@@ -21,14 +21,12 @@ export function RecursosGlobalesNotify() {
     if (!updatedAt) return
 
     if (!initializedRef.current) {
-      // Primera carga: sólo registrar el timestamp actual, no abrir el modal
       initializedRef.current = true
       lastSavedAtRef.current = updatedAt
       return
     }
 
     if (updatedAt !== lastSavedAtRef.current) {
-      // updatedAt cambió → el documento fue guardado
       lastSavedAtRef.current = updatedAt
       setShowModal(true)
       setSendResult('idle')
@@ -46,7 +44,7 @@ export function RecursosGlobalesNotify() {
       const res = await fetch('/api/recursos-globales/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recursoId: id, subject }),
+        body: JSON.stringify({ recursoId: id, subject, body }),
       })
 
       const data = await res.json()
@@ -70,6 +68,8 @@ export function RecursosGlobalesNotify() {
   }
 
   if (!showModal) return null
+
+  const fieldDisabled = sending || sendResult === 'success'
 
   return (
     <div
@@ -103,7 +103,7 @@ export function RecursosGlobalesNotify() {
           </p>
         </div>
 
-        <div style={{ marginBottom: '20px' }}>
+        <div style={{ marginBottom: '16px' }}>
           <label
             style={{
               display: 'block',
@@ -121,7 +121,7 @@ export function RecursosGlobalesNotify() {
             type="text"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            disabled={sending || sendResult === 'success'}
+            disabled={fieldDisabled}
             style={{
               display: 'block',
               width: '100%',
@@ -133,7 +133,43 @@ export function RecursosGlobalesNotify() {
               color: '#09090b',
               fontFamily: 'inherit',
               outline: 'none',
-              background: sending || sendResult === 'success' ? '#f9f9f9' : '#fff',
+              background: fieldDisabled ? '#f9f9f9' : '#fff',
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#374151',
+              marginBottom: '6px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Mensaje del correo
+          </label>
+          <textarea
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            disabled={fieldDisabled}
+            rows={4}
+            style={{
+              display: 'block',
+              width: '100%',
+              boxSizing: 'border-box',
+              border: '1.5px solid #e4e4e7',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              fontSize: '14px',
+              color: '#09090b',
+              fontFamily: 'inherit',
+              outline: 'none',
+              resize: 'vertical',
+              background: fieldDisabled ? '#f9f9f9' : '#fff',
             }}
           />
         </div>

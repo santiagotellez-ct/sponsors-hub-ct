@@ -15,19 +15,21 @@ interface NuevoContenidoEmailProps {
   companyName?: string
   tipo: 'recurso' | 'pieza'
   nombreContenido?: string
+  mensajePersonalizado?: string
 }
 
 export default function NuevoContenidoEmail({
   companyName = 'Sponsor',
   tipo,
   nombreContenido,
+  mensajePersonalizado,
 }: NuevoContenidoEmailProps) {
   const isRecurso = tipo === 'recurso'
   const titulo = isRecurso ? 'Tienes un nuevo recurso disponible' : 'Tienes una nueva pieza de redes sociales'
   const preview = isRecurso ? 'Nuevo recurso disponible en tu portal' : 'Nueva pieza de redes sociales disponible'
-  const descripcion = isRecurso
+  const descripcion = mensajePersonalizado ?? (isRecurso
     ? 'El equipo de Colombia Tech ha añadido un nuevo recurso a tu cuenta. Puedes consultarlo y descargarlo desde la sección Recursos de tu portal.'
-    : 'El equipo de Colombia Tech ha preparado una nueva pieza gráfica para tus redes sociales. Encuéntrala con el copy sugerido y fecha de publicación en tu portal.'
+    : 'El equipo de Colombia Tech ha preparado una nueva pieza gráfica para tus redes sociales. Encuéntrala con el copy sugerido y fecha de publicación en tu portal.')
   const href = isRecurso
     ? 'https://sponsor.colombiatechweek.co/dashboard/documentos'
     : 'https://sponsor.colombiatechweek.co/dashboard/redes-sociales'

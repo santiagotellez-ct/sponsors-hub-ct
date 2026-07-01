@@ -8,7 +8,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { recursoId, subject } = await req.json()
+    const { recursoId, subject, body: mensajePersonalizado } = await req.json()
 
     if (!recursoId || !subject) {
       return Response.json({ error: 'recursoId y subject son requeridos' }, { status: 400 })
@@ -63,6 +63,7 @@ export const POST = async (req: NextRequest) => {
             companyName: sponsor.companyName,
             tipo: 'recurso',
             nombreContenido: recurso.nombre,
+            mensajePersonalizado: mensajePersonalizado || undefined,
           }),
         })
 
