@@ -447,6 +447,9 @@ export const Sponsors: CollectionConfig = {
     // 1. EL HOOK AFTER: Aquí enviamos el correo leyendo el contexto
     afterChange: [
       async ({ doc, previousDoc, req, operation }) => {
+        // Ignorar actualizaciones internas del sistema (ej: sincronización de RecursosGlobales)
+        if (req.context?.skipNotifications) return
+
         // 1. CORREO DE BIENVENIDA (Cuando se crea)
         if (operation === 'create') {
           try {

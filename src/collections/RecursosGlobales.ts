@@ -1,8 +1,6 @@
-import type { CollectionConfig, CollectionAfterChangeHook } from 'payload'
+import type { CollectionConfig, CollectionAfterChangeHook, BasePayload } from 'payload'
 
-const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
-  const { payload } = req
-
+async function doSyncSponsors(doc: any, previousDoc: any, payload: BasePayload) {
   const toId = (s: any) => (typeof s === 'object' && s !== null ? String(s.id) : String(s))
 
   const prevSponsors: string[] = (previousDoc?.sponsors || []).map(toId)
@@ -12,7 +10,7 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
   const removed = prevSponsors.filter((id) => !newSponsors.includes(id))
   const unchanged = newSponsors.filter((id) => prevSponsors.includes(id))
 
-  console.log(`[RecursosGlobales] hook fired — added: ${added}, removed: ${removed}, unchanged: ${unchanged}`)
+  console.log(`[RecursosGlobales] sync — added: [${added}], removed: [${removed}]`)
 
   const resourceId = String(doc.id)
   const fileId =
@@ -22,7 +20,6 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
         : doc.file
       : undefined
 
-  // Añadir el recurso a los sponsors recién asignados
   for (const sponsorId of added) {
     try {
       const sponsor = await payload.findByID({
@@ -32,16 +29,14 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
         overrideAccess: true,
       })
       const existingDocs: any[] = (sponsor.documents as any[]) || []
-
-      if (existingDocs.some((d: any) => d.recursoGlobalId === resourceId)) {
-        console.log(`[RecursosGlobales] sponsor ${sponsorId} ya tiene el recurso, saltando`)
-        continue
-      }
+      if (existingDocs.some((d: any) => d.recursoGlobalId === resourceId)) continue
 
       await payload.update({
         collection: 'sponsors',
         id: sponsorId,
         overrideAccess: true,
+        // Evita disparar el afterChange de Sponsors (emails / N8N webhook)
+        context: { skipNotifications: true },
         data: {
           documents: [
             ...existingDocs,
@@ -55,13 +50,12 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
           ],
         },
       })
-      console.log(`[RecursosGlobales] recurso añadido al sponsor ${sponsorId}`)
+      console.log(`[RecursosGlobales] ✓ recurso añadido al sponsor ${sponsorId}`)
     } catch (e) {
       console.error(`[RecursosGlobales] ERROR al asignar al sponsor ${sponsorId}:`, e)
     }
   }
 
-  // Eliminar el recurso de los sponsors que fueron removidos
   for (const sponsorId of removed) {
     try {
       const sponsor = await payload.findByID({
@@ -78,15 +72,15 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
         collection: 'sponsors',
         id: sponsorId,
         overrideAccess: true,
+        context: { skipNotifications: true },
         data: { documents: filtered },
       })
-      console.log(`[RecursosGlobales] recurso removido del sponsor ${sponsorId}`)
+      console.log(`[RecursosGlobales] ✓ recurso removido del sponsor ${sponsorId}`)
     } catch (e) {
       console.error(`[RecursosGlobales] ERROR al remover del sponsor ${sponsorId}:`, e)
     }
   }
 
-  // Actualizar el recurso en sponsors que ya estaban asignados (cambio de nombre/archivo/url)
   for (const sponsorId of unchanged) {
     try {
       const sponsor = await payload.findByID({
@@ -112,13 +106,24 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
         collection: 'sponsors',
         id: sponsorId,
         overrideAccess: true,
+        context: { skipNotifications: true },
         data: { documents: updated },
       })
     } catch (e) {
       console.error(`[RecursosGlobales] ERROR al actualizar en sponsor ${sponsorId}:`, e)
     }
   }
+}
 
+const syncToSponsors: CollectionAfterChangeHook = ({ doc, previousDoc, req }) => {
+  // Correr fuera del ciclo actual para no bloquear el save ni disparar
+  // el afterChange de Sponsors (emails + N8N webhook)
+  setImmediate(() => {
+    doSyncSponsors(doc, previousDoc, req.payload).catch((e) =>
+      console.error('[RecursosGlobales] sync fatal:', e),
+    )
+  })
+  // Retorno síncrono: el save de RecursosGlobales termina inmediatamente
   return doc
 }
 
