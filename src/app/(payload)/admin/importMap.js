@@ -3,6 +3,7 @@ import { SponsorRelatedItemsPicker as SponsorRelatedItemsPicker_8ca11e70cc8eac5f
 import { FormResponseViewer as FormResponseViewer_de69bab4d59316620c3c95876f90a626 } from '@/components/admin/FormResponseViewer'
 import { RelatedItemsPicker as RelatedItemsPicker_71aaa352492582fc912123984d635a57 } from '@/components/admin/RelatedItemsPicker'
 import { DuplicatePlanButton as DuplicatePlanButton_24e2f9bbc3b89bd2c8b570d4f5689585 } from '@/components/admin/DuplicatePlanButton'
+import { RecursosGlobalesNotify as RecursosGlobalesNotify_09254586af6ff5caff1a53ebb6fcb71e } from '@/components/admin/RecursosGlobalesNotify'
 import { PayloadIcon as PayloadIcon_9d9cb0c39b863347f00f30cfa4fb88cd } from '@/components/payload-logo'
 import { PayloadLogo as PayloadLogo_9d9cb0c39b863347f00f30cfa4fb88cd } from '@/components/payload-logo'
 import { EntregablesNavLink as EntregablesNavLink_828fc8b9dea0d3658db4a998a4b0c8dd } from '@/components/admin/EntregablesNavLink'
@@ -19,6 +20,7 @@ export const importMap = {
   "@/components/admin/FormResponseViewer#FormResponseViewer": FormResponseViewer_de69bab4d59316620c3c95876f90a626,
   "@/components/admin/RelatedItemsPicker#RelatedItemsPicker": RelatedItemsPicker_71aaa352492582fc912123984d635a57,
   "@/components/admin/DuplicatePlanButton#DuplicatePlanButton": DuplicatePlanButton_24e2f9bbc3b89bd2c8b570d4f5689585,
+  "@/components/admin/RecursosGlobalesNotify#RecursosGlobalesNotify": RecursosGlobalesNotify_09254586af6ff5caff1a53ebb6fcb71e,
   "@/components/payload-logo#PayloadIcon": PayloadIcon_9d9cb0c39b863347f00f30cfa4fb88cd,
   "@/components/payload-logo#PayloadLogo": PayloadLogo_9d9cb0c39b863347f00f30cfa4fb88cd,
   "@/components/admin/EntregablesNavLink#EntregablesNavLink": EntregablesNavLink_828fc8b9dea0d3658db4a998a4b0c8dd,

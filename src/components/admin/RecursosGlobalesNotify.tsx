@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useFormProcessing, useDocumentInfo } from '@payloadcms/ui'
+import { useDocumentInfo } from '@payloadcms/ui'
 
 export function RecursosGlobalesNotify() {
   const [showModal, setShowModal] = useState(false)
@@ -10,28 +10,31 @@ export function RecursosGlobalesNotify() {
   const [sendResult, setSendResult] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  const isProcessing = useFormProcessing()
-  const { id } = useDocumentInfo()
+  const { id, savedDocumentData } = useDocumentInfo()
 
-  const prevProcessingRef = useRef(false)
+  // Detectar cuando se guarda el documento (savedDocumentData.updatedAt cambia)
+  const lastSavedAtRef = useRef<string | null>(null)
   const initializedRef = useRef(false)
 
   useEffect(() => {
+    const updatedAt = savedDocumentData?.updatedAt as string | undefined
+    if (!updatedAt) return
+
     if (!initializedRef.current) {
-      // Registrar el estado inicial sin disparar el modal
+      // Primera carga: sólo registrar el timestamp actual, no abrir el modal
       initializedRef.current = true
-      prevProcessingRef.current = isProcessing
+      lastSavedAtRef.current = updatedAt
       return
     }
 
-    // Detectar transición processing=true → false (guardado completado)
-    if (prevProcessingRef.current && !isProcessing) {
+    if (updatedAt !== lastSavedAtRef.current) {
+      // updatedAt cambió → el documento fue guardado
+      lastSavedAtRef.current = updatedAt
       setShowModal(true)
       setSendResult('idle')
       setErrorMsg('')
     }
-    prevProcessingRef.current = isProcessing
-  }, [isProcessing])
+  }, [savedDocumentData?.updatedAt])
 
   const handleSend = async () => {
     if (!id) return
@@ -91,7 +94,6 @@ export function RecursosGlobalesNotify() {
           boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
         }}
       >
-        {/* Header */}
         <div style={{ marginBottom: '20px' }}>
           <h2 style={{ margin: '0 0 6px', fontSize: '18px', fontWeight: 700, color: '#09090b' }}>
             Notificar a Sponsors
@@ -101,7 +103,6 @@ export function RecursosGlobalesNotify() {
           </p>
         </div>
 
-        {/* Subject input */}
         <div style={{ marginBottom: '20px' }}>
           <label
             style={{
@@ -137,29 +138,17 @@ export function RecursosGlobalesNotify() {
           />
         </div>
 
-        {/* Feedback */}
         {sendResult === 'success' && (
-          <p
-            style={{
-              margin: '0 0 16px',
-              fontSize: '14px',
-              color: '#16a34a',
-              fontWeight: 500,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
+          <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#16a34a', fontWeight: 500 }}>
             ✓ Correos enviados correctamente
           </p>
         )}
         {sendResult === 'error' && (
           <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#dc2626' }}>
-            Error al enviar: {errorMsg}
+            Error: {errorMsg}
           </p>
         )}
 
-        {/* Actions */}
         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
           <button
             type="button"
@@ -187,14 +176,12 @@ export function RecursosGlobalesNotify() {
               padding: '9px 20px',
               border: 'none',
               borderRadius: '8px',
-              background:
-                sending || sendResult === 'success' ? '#71717a' : '#09090b',
+              background: sending || sendResult === 'success' ? '#71717a' : '#09090b',
               color: '#fff',
               fontSize: '14px',
               fontWeight: 600,
               cursor: sending || sendResult === 'success' ? 'not-allowed' : 'pointer',
               fontFamily: 'inherit',
-              transition: 'background 0.15s',
             }}
           >
             {sending ? 'Enviando...' : 'Enviar correo'}
