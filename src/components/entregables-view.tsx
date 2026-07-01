@@ -377,10 +377,15 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
     return today >= new Date(unlockDate)
   }
 
+  const isLogoCompleted = participationDeliverables
+    .filter((d: any) => d.itemName?.toLowerCase().includes('logo'))
+    .every((d: any) => d.status === 'completed')
+
   // --- ESTADÍSTICAS ---
   let totalDeliverablesCount = 0
   let completedDeliverablesCount = 0
   let pendingDeliverablesCount = 0
+  let blockedDeliverablesCount = 0
 
   orderedCategories.forEach((categoryName: string) => {
     const blockDeliverables = participationDeliverables.filter(
@@ -391,6 +396,8 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
       totalDeliverablesCount++
       if (d.status === 'completed') {
         completedDeliverablesCount++
+      } else if (!isLogoCompleted && !d.itemName?.toLowerCase().includes('logo')) {
+        blockedDeliverablesCount++
       } else {
         pendingDeliverablesCount++
       }
