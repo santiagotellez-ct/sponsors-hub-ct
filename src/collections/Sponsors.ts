@@ -180,6 +180,12 @@ export const Sponsors: CollectionConfig = {
             condition: (_, siblingData) => siblingData?.tipo === 'url',
           },
         },
+        {
+          name: 'recursoGlobalId',
+          type: 'text',
+          label: 'ID del Recurso Global',
+          admin: { hidden: true },
+        },
       ],
     },
 

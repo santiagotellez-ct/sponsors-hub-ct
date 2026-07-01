@@ -224,6 +224,7 @@ export interface Sponsor {
         tipo?: ('archivo' | 'url') | null;
         file?: (number | null) | Media;
         url?: string | null;
+        recursoGlobalId?: string | null;
         id?: string | null;
       }[]
     | null;
@@ -543,7 +544,7 @@ export interface RecursosGlobale {
    */
   url?: string | null;
   /**
-   * Selecciona los sponsors que verán este recurso en su sección de Recursos. El recurso aparecerá automáticamente en su dashboard.
+   * Selecciona los sponsors. El recurso se añadirá automáticamente en su sección de Recursos.
    */
   sponsors?: (number | Sponsor)[] | null;
   updatedAt: string;
@@ -730,6 +731,7 @@ export interface SponsorsSelect<T extends boolean = true> {
         tipo?: T;
         file?: T;
         url?: T;
+        recursoGlobalId?: T;
         id?: T;
       };
   eventParticipations?:

@@ -22,20 +22,11 @@ export default async function DocumentosPage() {
 
   if (!user || user.collection !== 'sponsors') redirect('/')
 
-  const [sponsor, globalResourcesResult] = await Promise.all([
-    payload.findByID({
-      collection: 'sponsors',
-      id: user.id,
-      depth: 2,
-    }),
-    payload.find({
-      collection: 'recursos-globales',
-      where: {
-        sponsors: { in: [user.id] },
-      },
-      depth: 1,
-    }),
-  ])
+  const sponsor = await payload.findByID({
+    collection: 'sponsors',
+    id: user.id,
+    depth: 2,
+  })
 
   return (
     <TooltipProvider>
@@ -46,7 +37,7 @@ export default async function DocumentosPage() {
             <AppSidebar sponsor={sponsor} />
             <SidebarInset>
               <div className="flex flex-1 flex-col gap-4 p-4 lg:p-8 max-w-6xl mx-auto w-full">
-                <DocumentosView sponsor={sponsor} globalResources={globalResourcesResult.docs} />
+                <DocumentosView sponsor={sponsor} />
               </div>
             </SidebarInset>
           </div>
