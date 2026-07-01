@@ -12,6 +12,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
    y los vuelve Media física.
    ========================================== */
 const processNotionEvidences: CollectionBeforeChangeHook = async ({ data, req, operation }) => {
+  if (req.context?.skipNotifications) return data
   if (operation === 'update' || operation === 'create') {
     const { payload } = req
 
