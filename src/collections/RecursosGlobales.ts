@@ -12,6 +12,8 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
   const removed = prevSponsors.filter((id) => !newSponsors.includes(id))
   const unchanged = newSponsors.filter((id) => prevSponsors.includes(id))
 
+  console.log(`[RecursosGlobales] hook fired — added: ${added}, removed: ${removed}, unchanged: ${unchanged}`)
+
   const resourceId = String(doc.id)
   const fileId =
     doc.tipo === 'archivo' && doc.file
@@ -23,13 +25,23 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
   // Añadir el recurso a los sponsors recién asignados
   for (const sponsorId of added) {
     try {
-      const sponsor = await payload.findByID({ collection: 'sponsors', id: sponsorId, depth: 0 })
-      const existingDocs: any[] = sponsor.documents || []
-      if (existingDocs.some((d) => d.recursoGlobalId === resourceId)) continue
+      const sponsor = await payload.findByID({
+        collection: 'sponsors',
+        id: sponsorId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const existingDocs: any[] = (sponsor.documents as any[]) || []
+
+      if (existingDocs.some((d: any) => d.recursoGlobalId === resourceId)) {
+        console.log(`[RecursosGlobales] sponsor ${sponsorId} ya tiene el recurso, saltando`)
+        continue
+      }
 
       await payload.update({
         collection: 'sponsors',
         id: sponsorId,
+        overrideAccess: true,
         data: {
           documents: [
             ...existingDocs,
@@ -43,35 +55,48 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
           ],
         },
       })
+      console.log(`[RecursosGlobales] recurso añadido al sponsor ${sponsorId}`)
     } catch (e) {
-      console.error(`[RecursosGlobales] Error al asignar recurso al sponsor ${sponsorId}:`, e)
+      console.error(`[RecursosGlobales] ERROR al asignar al sponsor ${sponsorId}:`, e)
     }
   }
 
   // Eliminar el recurso de los sponsors que fueron removidos
   for (const sponsorId of removed) {
     try {
-      const sponsor = await payload.findByID({ collection: 'sponsors', id: sponsorId, depth: 0 })
-      const existingDocs: any[] = sponsor.documents || []
-      const filtered = existingDocs.filter((d) => d.recursoGlobalId !== resourceId)
+      const sponsor = await payload.findByID({
+        collection: 'sponsors',
+        id: sponsorId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const existingDocs: any[] = (sponsor.documents as any[]) || []
+      const filtered = existingDocs.filter((d: any) => d.recursoGlobalId !== resourceId)
       if (filtered.length === existingDocs.length) continue
 
       await payload.update({
         collection: 'sponsors',
         id: sponsorId,
+        overrideAccess: true,
         data: { documents: filtered },
       })
+      console.log(`[RecursosGlobales] recurso removido del sponsor ${sponsorId}`)
     } catch (e) {
-      console.error(`[RecursosGlobales] Error al remover recurso del sponsor ${sponsorId}:`, e)
+      console.error(`[RecursosGlobales] ERROR al remover del sponsor ${sponsorId}:`, e)
     }
   }
 
-  // Actualizar el recurso en sponsors que ya estaban asignados (si cambió nombre/archivo/url)
+  // Actualizar el recurso en sponsors que ya estaban asignados (cambio de nombre/archivo/url)
   for (const sponsorId of unchanged) {
     try {
-      const sponsor = await payload.findByID({ collection: 'sponsors', id: sponsorId, depth: 0 })
-      const existingDocs: any[] = sponsor.documents || []
-      const idx = existingDocs.findIndex((d) => d.recursoGlobalId === resourceId)
+      const sponsor = await payload.findByID({
+        collection: 'sponsors',
+        id: sponsorId,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const existingDocs: any[] = (sponsor.documents as any[]) || []
+      const idx = existingDocs.findIndex((d: any) => d.recursoGlobalId === resourceId)
       if (idx === -1) continue
 
       const updated = [...existingDocs]
@@ -86,10 +111,11 @@ const syncToSponsors: CollectionAfterChangeHook = async ({ doc, previousDoc, req
       await payload.update({
         collection: 'sponsors',
         id: sponsorId,
+        overrideAccess: true,
         data: { documents: updated },
       })
     } catch (e) {
-      console.error(`[RecursosGlobales] Error al actualizar recurso en sponsor ${sponsorId}:`, e)
+      console.error(`[RecursosGlobales] ERROR al actualizar en sponsor ${sponsorId}:`, e)
     }
   }
 
