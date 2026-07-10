@@ -33,6 +33,10 @@ import {
   ClipboardListIcon,
 } from 'lucide-react'
 
+function toId(val: any) {
+  return val && typeof val === 'object' ? val.id : val
+}
+
 function deliverableIcon(type: string) {
   if (type === 'image') return <ImageIcon className="w-5 h-5 text-muted-foreground/80" />
   if (type === 'text') return <AlignLeftIcon className="w-5 h-5 text-muted-foreground/80" />
@@ -133,37 +137,59 @@ export function EntregablesView({ sponsor }: { sponsor: any }) {
         formResponseData = responses
       }
 
-      const updatedParticipations = [...sponsor.eventParticipations]
-      const currentPart = updatedParticipations[activeParticipationIndex]
-
-      currentPart.event =
-        typeof currentPart.event === 'object' ? currentPart.event.id : currentPart.event
-      currentPart.plan =
-        typeof currentPart.plan === 'object' ? currentPart.plan.id : currentPart.plan
-
-      currentPart.deliverables = currentPart.deliverables.map((d: any) => {
-        if (d.id === deliverableId) {
-          return {
-            ...d,
-            status: 'completed',
-            uploadedFile: uploadedFileId || d.uploadedFile,
-            uploadedText: textInputs[deliverableId] || d.uploadedText,
-            uploadedLink: linkInputs[deliverableId] || d.uploadedLink,
-            formResponse: type === 'formulario' ? formResponseData : d.formResponse,
-          }
-        }
-        return d
-      })
-
       // Marcar ítems vinculados como in_progress (soporta string[] y [{itemName}][])
       const linkedNames = (relatedItemNames || []).map((r: any) =>
         typeof r === 'string' ? r : r?.itemName,
       )
-      currentPart.benefitItems = currentPart.benefitItems.map((item: any) => {
-        if (linkedNames.includes(item.itemName) && item.status === 'not_started') {
-          return { ...item, status: 'in_progress' }
+
+      // sponsor viene con depth:2, así que event/plan/formId/uploadedFile/etc.
+      // llegan como objetos poblados. Payload solo acepta IDs en campos relationship,
+      // así que hay que "desinflarlos" en TODAS las participaciones antes de reenviar.
+      const updatedParticipations = sponsor.eventParticipations.map((part: any, idx: number) => {
+        const normalized = {
+          ...part,
+          event: toId(part.event),
+          plan: toId(part.plan),
+          deliverables: (part.deliverables || []).map((d: any) => ({
+            ...d,
+            formId: toId(d.formId),
+            uploadedFile: toId(d.uploadedFile),
+          })),
+          benefitItems: (part.benefitItems || []).map((item: any) => ({
+            ...item,
+            evidences: (item.evidences || []).map((ev: any) => ({ ...ev, file: toId(ev.file) })),
+          })),
+          redesSociales: (part.redesSociales || []).map((r: any) => ({
+            ...r,
+            pieza: toId(r.pieza),
+            archivo: toId(r.archivo),
+          })),
         }
-        return item
+
+        if (idx !== activeParticipationIndex) return normalized
+
+        normalized.deliverables = normalized.deliverables.map((d: any) => {
+          if (d.id === deliverableId) {
+            return {
+              ...d,
+              status: 'completed',
+              uploadedFile: uploadedFileId || d.uploadedFile,
+              uploadedText: textInputs[deliverableId] || d.uploadedText,
+              uploadedLink: linkInputs[deliverableId] || d.uploadedLink,
+              formResponse: type === 'formulario' ? formResponseData : d.formResponse,
+            }
+          }
+          return d
+        })
+
+        normalized.benefitItems = normalized.benefitItems.map((item: any) => {
+          if (linkedNames.includes(item.itemName) && item.status === 'not_started') {
+            return { ...item, status: 'in_progress' }
+          }
+          return item
+        })
+
+        return normalized
       })
 
       const updateRes = await fetch(`/api/sponsors/${sponsor.id}`, {

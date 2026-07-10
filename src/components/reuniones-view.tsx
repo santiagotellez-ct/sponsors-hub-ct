@@ -17,6 +17,10 @@ import {
   ExternalLinkIcon,
 } from 'lucide-react'
 
+function toId(val: any) {
+  return val && typeof val === 'object' ? val.id : val
+}
+
 export function ReunionesView({ sponsor }: { sponsor: any }) {
   const router = useRouter()
   const [isUpdating, setIsUpdating] = useState(false)
@@ -44,23 +48,44 @@ export function ReunionesView({ sponsor }: { sponsor: any }) {
 
     setIsUpdating(true)
     try {
-      const updatedParticipations = [...sponsor.eventParticipations]
-      const currentPart = updatedParticipations[activeParticipationIndex]
-
-      currentPart.event =
-        typeof currentPart.event === 'object' ? currentPart.event.id : currentPart.event
-      currentPart.plan =
-        typeof currentPart.plan === 'object' ? currentPart.plan.id : currentPart.plan
-
-      currentPart.meetings = currentPart.meetings.map((m: any) => {
-        if (m.id === meetingId) {
-          return {
-            ...m,
-            status: 'scheduled',
-            scheduledDate: selectedDate,
-          }
+      // sponsor viene con depth:2, así que event/plan/formId/uploadedFile/etc.
+      // llegan como objetos poblados. Payload solo acepta IDs en campos relationship,
+      // así que hay que "desinflarlos" en TODAS las participaciones antes de reenviar.
+      const updatedParticipations = sponsor.eventParticipations.map((part: any, idx: number) => {
+        const normalized = {
+          ...part,
+          event: toId(part.event),
+          plan: toId(part.plan),
+          deliverables: (part.deliverables || []).map((d: any) => ({
+            ...d,
+            formId: toId(d.formId),
+            uploadedFile: toId(d.uploadedFile),
+          })),
+          benefitItems: (part.benefitItems || []).map((item: any) => ({
+            ...item,
+            evidences: (item.evidences || []).map((ev: any) => ({ ...ev, file: toId(ev.file) })),
+          })),
+          redesSociales: (part.redesSociales || []).map((r: any) => ({
+            ...r,
+            pieza: toId(r.pieza),
+            archivo: toId(r.archivo),
+          })),
         }
-        return m
+
+        if (idx !== activeParticipationIndex) return normalized
+
+        normalized.meetings = (part.meetings || []).map((m: any) => {
+          if (m.id === meetingId) {
+            return {
+              ...m,
+              status: 'scheduled',
+              scheduledDate: selectedDate,
+            }
+          }
+          return m
+        })
+
+        return normalized
       })
 
       await fetch(`/api/sponsors/${sponsor.id}`, {
