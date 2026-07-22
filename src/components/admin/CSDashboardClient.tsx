@@ -195,13 +195,11 @@ function DelivCell({ deliv, colType, sponsorName, colName, sponsorId, delivKey, 
     }
     if (colType === 'text' && deliv.uploadedText) {
       const fields = [{ label: 'Texto enviado', value: deliv.uploadedText, type: 'text' }]
-      if (deliv.publishedLink) fields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
       onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields })
       return
     }
     if (deliv.uploadedLink) {
       const fields = [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }]
-      if (deliv.publishedLink) fields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
       onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields })
       return
     }
@@ -213,7 +211,6 @@ function DelivCell({ deliv, colType, sponsorName, colName, sponsorId, delivKey, 
       } else if (deliv.formResponse && typeof deliv.formResponse === 'object') {
         for (const [k, v] of Object.entries(deliv.formResponse)) { formFields.push({ label: k, value: v, type: 'text' }) }
       }
-      if (deliv.publishedLink) formFields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
       onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields: formFields }); return
     }
     const url = deliv.actionUrl
