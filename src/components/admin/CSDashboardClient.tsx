@@ -20,7 +20,7 @@ type SponsorRow = {
 
 type ModalData =
   | { kind: 'file'; url: string; filename: string; isImage: boolean }
-  | { kind: 'form'; sponsorName: string; delivName: string; fields: { label: string; value: any; type: string }[]; status: string; dueDate?: string }
+  | { kind: 'form'; sponsorId: string | number; delivKey: string; sponsorName: string; delivName: string; fields: { label: string; value: any; type: string }[]; status: string; dueDate?: string; publishedLink?: string }
 
 function activePart(sponsor: any) {
   return sponsor.eventParticipations?.find((p: any) => p.isCurrent) ?? sponsor.eventParticipations?.[0] ?? null
@@ -30,6 +30,10 @@ function normalizePlan(plan: any): string {
   if (!plan) return '—'
   if (typeof plan === 'object') return plan.name || String(plan.id)
   return String(plan)
+}
+
+function toId(val: any) {
+  return val && typeof val === 'object' ? val.id : val
 }
 
 function fmtDate(d: any): string {
@@ -42,13 +46,19 @@ const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot
   completed: { label: '✓ Enviado',   bg: '#d1fae5', color: '#065f46', dot: '#10b981' },
   pending:   { label: '○ Pendiente', bg: '#fef3c7', color: '#92400e', dot: '#f59e0b' },
   overdue:   { label: '! Vencido',   bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' },
+  published: { label: '★ Publicado', bg: '#ede9fe', color: '#4c1d95', dot: '#7c3aed' },
 }
 
 function statusCfg(status?: string) {
   return STATUS_CFG[status ?? ''] ?? { label: '—', bg: 'var(--theme-elevation-100)', color: 'var(--theme-elevation-400)', dot: 'var(--theme-elevation-300)' }
 }
 
-function Modal({ data, onClose }: { data: ModalData | null; onClose: () => void }) {
+function Modal({ data, onClose, onSave }: { data: ModalData | null; onClose: () => void; onSave: (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => Promise<void> }) {
+  const [editStatus, setEditStatus] = useState('')
+  const [editLink, setEditLink] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   useEffect(() => {
     if (!data) return
     const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -56,7 +66,29 @@ function Modal({ data, onClose }: { data: ModalData | null; onClose: () => void 
     return () => window.removeEventListener('keydown', h)
   }, [data, onClose])
 
+  useEffect(() => {
+    if (data?.kind === 'form') {
+      setEditStatus(data.status || 'pending')
+      setEditLink(data.publishedLink || '')
+      setSaveError(null)
+    }
+  }, [data])
+
   if (!data) return null
+
+  const handleSave = async () => {
+    if (data.kind !== 'form') return
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSave(data.sponsorId, data.delivKey, editStatus, editLink)
+      onClose()
+    } catch (err: any) {
+      setSaveError(err?.message || 'Error al guardar')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handleDownload = async (url: string, filename: string) => {
     try {
@@ -118,6 +150,23 @@ function Modal({ data, onClose }: { data: ModalData | null; onClose: () => void 
                 </div>
               ))}
               {data.fields.length === 0 && <p style={{ color: 'var(--theme-elevation-400)', fontSize: '0.875rem' }}>No hay respuestas registradas aún.</p>}
+
+              <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--theme-elevation-150)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--theme-elevation-500)', marginBottom: '4px' }}>Estado</label>
+                  <select value={editStatus} onChange={e => setEditStatus(e.target.value)} style={{ width: '100%', padding: '0.45rem 0.6rem', background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-200)', borderRadius: '6px', color: 'var(--theme-text)', fontSize: '0.875rem', fontFamily: 'inherit' }}>
+                    {Object.entries(STATUS_CFG).map(([val, cfg]) => <option key={val} value={val}>{cfg.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--theme-elevation-500)', marginBottom: '4px' }}>Link de publicación</label>
+                  <input type="text" value={editLink} onChange={e => setEditLink(e.target.value)} placeholder="https://..." style={{ width: '100%', padding: '0.45rem 0.6rem', background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-200)', borderRadius: '6px', color: 'var(--theme-text)', fontSize: '0.875rem', fontFamily: 'inherit' }} />
+                </div>
+                {saveError && <p style={{ color: '#991b1b', fontSize: '0.8125rem', margin: 0 }}>{saveError}</p>}
+                <button type="button" onClick={handleSave} disabled={saving} style={{ alignSelf: 'flex-start', padding: '0.45rem 1rem', background: 'var(--theme-text)', color: 'var(--theme-bg)', border: 'none', borderRadius: '6px', fontSize: '0.8125rem', fontWeight: 600, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -126,14 +175,14 @@ function Modal({ data, onClose }: { data: ModalData | null; onClose: () => void 
   )
 }
 
-function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: any; colType: string; sponsorName: string; colName: string; onOpen: (data: ModalData) => void }) {
+function DelivCell({ deliv, colType, sponsorName, colName, sponsorId, delivKey, onOpen }: { deliv: any; colType: string; sponsorName: string; colName: string; sponsorId: string | number; delivKey: string; onOpen: (data: ModalData) => void }) {
   const cfg = statusCfg(deliv?.status)
   if (!deliv) {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><span style={{ color: 'var(--theme-elevation-250)', fontSize: '0.875rem' }}>—</span></div>
   }
-  const isCompleted = deliv.status === 'completed'
+  const isClickable = deliv.status === 'completed' || deliv.status === 'published'
   const handleClick = () => {
-    if (!isCompleted) return
+    if (!isClickable) return
     // Archivo subido (imagen, documento o direct con archivo)
     if (deliv.uploadedFile) {
       const file = deliv.uploadedFile
@@ -144,8 +193,18 @@ function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: an
         return
       }
     }
-    if (colType === 'text' && deliv.uploadedText) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Texto enviado', value: deliv.uploadedText, type: 'text' }] }); return }
-    if (deliv.uploadedLink) { onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }] }); return }
+    if (colType === 'text' && deliv.uploadedText) {
+      const fields = [{ label: 'Texto enviado', value: deliv.uploadedText, type: 'text' }]
+      if (deliv.publishedLink) fields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
+      onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields })
+      return
+    }
+    if (deliv.uploadedLink) {
+      const fields = [{ label: 'Link enviado', value: deliv.uploadedLink, type: 'link' }]
+      if (deliv.publishedLink) fields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
+      onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields })
+      return
+    }
     if (colType === 'formulario') {
       const formId = deliv.formId
       const formFields: { label: string; value: any; type: string }[] = []
@@ -154,23 +213,24 @@ function DelivCell({ deliv, colType, sponsorName, colName, onOpen }: { deliv: an
       } else if (deliv.formResponse && typeof deliv.formResponse === 'object') {
         for (const [k, v] of Object.entries(deliv.formResponse)) { formFields.push({ label: k, value: v, type: 'text' }) }
       }
-      onOpen({ kind: 'form', sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, fields: formFields }); return
+      if (deliv.publishedLink) formFields.push({ label: 'Link de publicación', value: deliv.publishedLink, type: 'link' })
+      onOpen({ kind: 'form', sponsorId, delivKey, sponsorName, delivName: colName, status: deliv.status, dueDate: deliv.dueDate, publishedLink: deliv.publishedLink, fields: formFields }); return
     }
     const url = deliv.actionUrl
     if (url) window.open(url, '_blank')
   }
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', height: '100%', padding: '0 8px' }}>
-      <button type="button" onClick={handleClick} disabled={!isCompleted} title={isCompleted ? `Ver entregable: ${colName}` : cfg.label}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: cfg.bg, color: cfg.color, border: 'none', cursor: isCompleted ? 'pointer' : 'default', fontSize: '0.75rem', fontWeight: 600 }}
-        onMouseEnter={e => { if (isCompleted) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(0.92)' }}
+      <button type="button" onClick={handleClick} disabled={!isClickable} title={isClickable ? `Ver entregable: ${colName}` : cfg.label}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '99px', background: cfg.bg, color: cfg.color, border: 'none', cursor: isClickable ? 'pointer' : 'default', fontSize: '0.75rem', fontWeight: 600 }}
+        onMouseEnter={e => { if (isClickable) (e.currentTarget as HTMLButtonElement).style.filter = 'brightness(0.92)' }}
         onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.filter = '' }}
       >
         <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
         {cfg.label}
-        {isCompleted && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
+        {isClickable && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.6 }}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>}
       </button>
-      {deliv.dueDate && !isCompleted && <span style={{ fontSize: '0.625rem', color: 'var(--theme-elevation-400)' }}>{fmtDate(deliv.dueDate)}</span>}
+      {deliv.dueDate && !isClickable && <span style={{ fontSize: '0.625rem', color: 'var(--theme-elevation-400)' }}>{fmtDate(deliv.dueDate)}</span>}
     </div>
   )
 }
@@ -183,6 +243,55 @@ export const CSDashboardClient: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('all')
   const [modalData, setModalData] = useState<ModalData | null>(null)
   const closeModal = useCallback(() => setModalData(null), [])
+
+  const handleSaveDeliverable = useCallback(async (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => {
+    const sponsor = sponsors.find(s => String(s.id) === String(sponsorId))
+    if (!sponsor) throw new Error('Sponsor no encontrado')
+    const participations = sponsor.eventParticipations || []
+    const activeIndex = participations.findIndex((p: any) => p.isCurrent)
+    const targetIndex = activeIndex >= 0 ? activeIndex : 0
+
+    const updatedParticipations = participations.map((part: any, idx: number) => {
+      const normalized = {
+        ...part,
+        event: toId(part.event),
+        plan: toId(part.plan),
+        deliverables: (part.deliverables || []).map((d: any) => ({
+          ...d,
+          formId: toId(d.formId),
+          uploadedFile: toId(d.uploadedFile),
+        })),
+        benefitItems: (part.benefitItems || []).map((item: any) => ({
+          ...item,
+          evidences: (item.evidences || []).map((ev: any) => ({ ...ev, file: toId(ev.file) })),
+        })),
+        redesSociales: (part.redesSociales || []).map((r: any) => ({
+          ...r,
+          pieza: toId(r.pieza),
+          archivo: toId(r.archivo),
+        })),
+      }
+
+      if (idx !== targetIndex) return normalized
+
+      normalized.deliverables = normalized.deliverables.map((d: any) => {
+        const key = `${d.benefitCategory}|||${d.itemName}`
+        if (key === delivKey) return { ...d, status: newStatus, publishedLink: newLink }
+        return d
+      })
+
+      return normalized
+    })
+
+    const res = await fetch(`/api/sponsors/${sponsorId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventParticipations: updatedParticipations }),
+    })
+    if (!res.ok) throw new Error('Error al guardar el entregable')
+
+    setSponsors(prev => prev.map(s => (String(s.id) === String(sponsorId) ? { ...s, eventParticipations: updatedParticipations } : s)))
+  }, [sponsors])
 
   useEffect(() => {
     fetch('/api/sponsors?limit=300&depth=2', { credentials: 'include' })
@@ -267,7 +376,7 @@ export const CSDashboardClient: React.FC = () => {
 
   return (
     <>
-      <Modal data={modalData} onClose={closeModal} />
+      <Modal data={modalData} onClose={closeModal} onSave={handleSaveDeliverable} />
       <div style={{ padding: '1.75rem 2rem', minHeight: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
@@ -347,7 +456,7 @@ export const CSDashboardClient: React.FC = () => {
                       </td>
                       {cols.map(c => (
                         <td key={c.key} style={{ ...tdBase, padding: '6px 4px', height: '52px' }}>
-                          <DelivCell deliv={row.deliverables[c.key]} colType={c.type} sponsorName={row.name} colName={c.itemName} onOpen={setModalData} />
+                          <DelivCell deliv={row.deliverables[c.key]} colType={c.type} sponsorName={row.name} colName={c.itemName} sponsorId={row.id} delivKey={c.key} onOpen={setModalData} />
                         </td>
                       ))}
                     </tr>

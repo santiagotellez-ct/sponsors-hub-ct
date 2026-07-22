@@ -293,8 +293,17 @@ export const Sponsors: CollectionConfig = {
                 { label: 'Pendiente', value: 'pending' },
                 { label: 'Completado', value: 'completed' },
                 { label: 'Vencido', value: 'overdue' },
+                { label: 'Publicado', value: 'published' },
               ],
               label: 'Estado',
+            },
+            {
+              name: 'publishedLink',
+              type: 'text',
+              label: 'Link de publicación',
+              admin: {
+                condition: (_data, siblingData) => siblingData?.status === 'published',
+              },
             },
             { name: 'dueDate', type: 'date', label: 'Fecha Máxima' },
             {
