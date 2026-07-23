@@ -178,6 +178,23 @@ const buttonSecondary: React.CSSProperties = {
   fontFamily: 'inherit',
 }
 
+function toggleButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.35rem 0.875rem',
+    borderRadius: '6px',
+    border: `1px solid ${active ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`,
+    background: active ? 'var(--theme-text)' : 'transparent',
+    color: active ? 'var(--theme-bg)' : 'var(--theme-text)',
+    fontSize: '0.8125rem',
+    fontWeight: active ? 600 : 400,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  }
+}
+
+const CTF_LOGO_BLANCO = 'https://www.figma.com/api/mcp/asset/6e8ec906-e2c3-4df4-bab9-4da8acf69f93'
+const CTF_LOGO_NEGRO = '/Logo-CTF-NegroAmarillo.png'
+
 // Full-screen crop modal, opened right after a new source image is picked.
 function CropModal({
   image,
@@ -281,6 +298,10 @@ function ArticuloEditor({
   const [exporting, setExporting] = useState(false)
   const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+
+  // Logo variants: preview/export only, never persisted.
+  const [logoVariant, setLogoVariant] = useState<'blanco' | 'color'>('blanco')
+  const [ctfLogoVariant, setCtfLogoVariant] = useState<'blanco' | 'negro'>('blanco')
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewRef = useRef<HTMLDivElement>(null)
@@ -491,7 +512,11 @@ function ArticuloEditor({
   }
 
   const tierColor = sponsor.tier ? TIER_COLORS[sponsor.tier] : null
-  const sponsorLogoUrl = sponsor.logoBlanco?.url || sponsor.logo?.url || null
+  const hasLogoBlanco = Boolean(sponsor.logoBlanco?.url)
+  const sponsorLogoUrl = hasLogoBlanco
+    ? (logoVariant === 'blanco' ? sponsor.logoBlanco.url : sponsor.logo?.url || sponsor.logoBlanco.url)
+    : sponsor.logo?.url || null
+  const ctfLogoUrl = ctfLogoVariant === 'blanco' ? CTF_LOGO_BLANCO : CTF_LOGO_NEGRO
 
   return (
     <div style={{ display: 'flex', minHeight: '100%' }}>
@@ -605,10 +630,8 @@ function ArticuloEditor({
               ) : (
                 <div style={{ height: '38.67px', width: '104.5px' }} />
               )}
-              {/* TODO: no Colombia Tech Fest asset exists in /public yet — replace with the
-                  final local asset once it's added, then drop this Figma MCP URL. */}
               <img
-                src="https://www.figma.com/api/mcp/asset/6e8ec906-e2c3-4df4-bab9-4da8acf69f93"
+                src={ctfLogoUrl}
                 alt="Colombia Tech Fest"
                 style={{ height: '31.25px', width: '104.5px', objectFit: 'contain' }}
               />
@@ -672,6 +695,32 @@ function ArticuloEditor({
               <button type="button" onClick={() => fileInputRef.current?.click()} style={buttonSecondary}>
                 {previewImageUrl ? 'Cambiar imagen' : 'Agregar imagen'}
               </button>
+            </div>
+
+            {hasLogoBlanco && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label style={labelStyle}>Logo del sponsor</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button type="button" onClick={() => setLogoVariant('blanco')} style={toggleButtonStyle(logoVariant === 'blanco')}>
+                    Blanco
+                  </button>
+                  <button type="button" onClick={() => setLogoVariant('color')} style={toggleButtonStyle(logoVariant === 'color')}>
+                    Color
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={labelStyle}>Logo Colombia Tech Fest</label>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button type="button" onClick={() => setCtfLogoVariant('blanco')} style={toggleButtonStyle(ctfLogoVariant === 'blanco')}>
+                  Blanco
+                </button>
+                <button type="button" onClick={() => setCtfLogoVariant('negro')} style={toggleButtonStyle(ctfLogoVariant === 'negro')}>
+                  Negro
+                </button>
+              </div>
             </div>
 
             <div style={{ marginBottom: '1.25rem' }}>
