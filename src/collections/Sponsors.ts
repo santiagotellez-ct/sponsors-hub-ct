@@ -144,6 +144,7 @@ export const Sponsors: CollectionConfig = {
       ],
     },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Logo de la Empresa' },
+    { name: 'logoBlanco', type: 'upload', relationTo: 'media', label: 'Logo de la Empresa (Blanco)' },
     {
       type: 'group',
       name: 'contactInfo',
