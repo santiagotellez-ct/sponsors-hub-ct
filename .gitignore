@@ -50,3 +50,6 @@ node_modules/
 /playwright/.cache/
 
 .vercel
+
+# local-only sponsor logo assets, never committed
+/public/logos-sponsors-blanco/
