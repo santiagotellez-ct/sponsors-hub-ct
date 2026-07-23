@@ -778,7 +778,53 @@ function SponsorCard({
   )
 }
 
+// Diagnostic: catches render-time errors that would otherwise produce a
+// blank admin view with nothing but a console stack trace from React's
+// dev overlay (which isn't visible in production).
+class ArticulosErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { error }
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('ArticulosClient render error', error, info.componentStack)
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '2rem', color: '#991b1b' }}>
+          <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.125rem' }}>Ocurrió un error al cargar Artículos</h2>
+          <pre style={{ whiteSpace: 'pre-wrap', fontSize: '0.8125rem', color: 'var(--theme-text)' }}>
+            {this.state.error.message}
+            {'\n\n'}
+            {this.state.error.stack}
+          </pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 export const ArticulosClient: React.FC = () => {
+  console.error('ArticulosClient mounting')
+  return (
+    <ArticulosErrorBoundary>
+      <ArticulosClientInner />
+    </ArticulosErrorBoundary>
+  )
+}
+
+function ArticulosClientInner() {
   const [sponsors, setSponsors] = useState<any[]>([])
   const [articles, setArticles] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
