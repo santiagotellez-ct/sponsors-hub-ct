@@ -10,6 +10,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { Sponsors } from './collections/Sponsors'
+import { SponsorArticles } from './collections/SponsorArticles'
 import { Plans } from './collections/Plans'
 import { Forms } from './collections/Forms'
 import { PiezasRedesSociales } from './collections/PiezasRedesSociales'
@@ -62,7 +63,17 @@ export default buildConfig({
   },
 },    },
   },
-  collections: [Users, Media, Sponsors, Events, Plans, Forms, PiezasRedesSociales, RecursosGlobales],
+  collections: [
+    Users,
+    Media,
+    Sponsors,
+    SponsorArticles,
+    Events,
+    Plans,
+    Forms,
+    PiezasRedesSociales,
+    RecursosGlobales,
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

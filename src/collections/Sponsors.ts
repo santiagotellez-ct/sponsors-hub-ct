@@ -127,6 +127,22 @@ export const Sponsors: CollectionConfig = {
        DATOS FIJOS 
        ========================================== */
     { name: 'companyName', type: 'text', required: true, label: 'Nombre de la Empresa' },
+    {
+      name: 'tier',
+      type: 'select',
+      label: 'Tier',
+      options: [
+        { label: 'Diamond', value: 'Diamond' },
+        { label: 'Platinum', value: 'Platinum' },
+        { label: 'Gold', value: 'Gold' },
+        { label: 'Silver', value: 'Silver' },
+        { label: 'Bronze', value: 'Bronze' },
+        { label: 'Aliados', value: 'Aliados' },
+        { label: 'Experiencia', value: 'Experiencia' },
+        { label: 'Presenta', value: 'Presenta' },
+        { label: 'Media Partner', value: 'Media Partner' },
+      ],
+    },
     { name: 'logo', type: 'upload', relationTo: 'media', label: 'Logo de la Empresa' },
     {
       type: 'group',
