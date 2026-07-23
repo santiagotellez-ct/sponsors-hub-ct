@@ -32,7 +32,7 @@ export const SponsorArticles: CollectionConfig = {
     },
     {
       name: 'articuloCorto',
-      type: 'richtext',
+      type: 'richText',
       label: 'Artículo Corto',
       admin: {
         description: 'El copy del onepager, no se muestra sobre la imagen.',
