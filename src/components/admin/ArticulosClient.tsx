@@ -56,6 +56,39 @@ function readFileAsDataURL(file: File): Promise<string> {
   })
 }
 
+function loadImageElement(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+type CroppedAreaPixels = { x: number; y: number; width: number; height: number }
+
+// Draws the crop rectangle (in the source image's own pixel coordinates,
+// as returned by react-easy-crop's onCropComplete) onto an offscreen
+// canvas and reads it back out as the actual cropped image — no CSS
+// transform approximation involved.
+async function cropImageToCanvas(
+  imageSrc: string,
+  area: CroppedAreaPixels,
+): Promise<{ dataUrl: string; blob: Blob }> {
+  const img = await loadImageElement(imageSrc)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.max(1, Math.round(area.width))
+  canvas.height = Math.max(1, Math.round(area.height))
+  const ctx = canvas.getContext('2d')
+  if (!ctx) throw new Error('No se pudo procesar la imagen')
+  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height)
+  const dataUrl = canvas.toDataURL('image/png')
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('No se pudo generar la imagen recortada'))), 'image/png')
+  })
+  return { dataUrl, blob }
+}
+
 // Minimal Lexical doc <-> plain text round-trip. Good enough for a plain
 // textarea editing a richText field; Fase 4 will swap this for the real
 // Lexical editor and this helper pair goes away.
@@ -155,15 +188,17 @@ function CropModal({
   onCropComplete,
   onConfirm,
   onCancel,
+  confirming,
 }: {
   image: string
   crop: { x: number; y: number }
   zoom: number
   onCropChange: (crop: { x: number; y: number }) => void
   onZoomChange: (zoom: number) => void
-  onCropComplete: (croppedArea: any, croppedAreaPixels: any) => void
+  onCropComplete: (croppedArea: any, croppedAreaPixels: CroppedAreaPixels) => void
   onConfirm: () => void
   onCancel: () => void
+  confirming: boolean
 }) {
   return (
     <div
@@ -201,11 +236,11 @@ function CropModal({
         style={{ width: '540px', maxWidth: '90vw' }}
       />
       <div style={{ display: 'flex', gap: '0.75rem' }}>
-        <button type="button" onClick={onCancel} style={{ ...buttonSecondary, background: 'var(--theme-bg)' }}>
+        <button type="button" onClick={onCancel} disabled={confirming} style={{ ...buttonSecondary, background: 'var(--theme-bg)', opacity: confirming ? 0.6 : 1 }}>
           Cancelar
         </button>
-        <button type="button" onClick={onConfirm} style={buttonPrimary}>
-          Confirmar
+        <button type="button" onClick={onConfirm} disabled={confirming} style={{ ...buttonPrimary, opacity: confirming ? 0.6 : 1 }}>
+          {confirming ? 'Procesando…' : 'Confirmar'}
         </button>
       </div>
     </div>
@@ -233,13 +268,15 @@ function ArticuloEditor({
   const [imagenId, setImagenId] = useState<string | number | null>(null)
   const [imageSourceId, setImageSourceId] = useState<string | number | null>(null)
   const [imageSourceUrl, setImageSourceUrl] = useState<string | null>(null) // existing media, from server
-  const [imageSourceFile, setImageSourceFile] = useState<File | null>(null) // newly picked, pending upload
-  const [imageSourcePreview, setImageSourcePreview] = useState<string | null>(null) // base64 for the new file
+  const [imageSourceFile, setImageSourceFile] = useState<File | null>(null) // actual cropped result, pending upload
+  const [imageSourcePreview, setImageSourcePreview] = useState<string | null>(null) // actual cropped result, as a data URL
 
-  const [imageCrop, setImageCrop] = useState({ x: 0, y: 0, zoom: 1 })
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null)
+  const [rawImageDataUrl, setRawImageDataUrl] = useState<string | null>(null) // uncropped pick, only while the crop modal is open
+  const [imageCrop, setImageCrop] = useState({ x: 0, y: 0, zoom: 1 }) // pan/zoom for the crop modal only — not used for rendering
+  const croppedAreaPixelsRef = useRef<CroppedAreaPixels | null>(null)
   const [cropModalOpen, setCropModalOpen] = useState(false)
-  const preConfirmState = useRef<{ file: File | null; preview: string | null; crop: { x: number; y: number; zoom: number } } | null>(null)
+  const [cropping, setCropping] = useState(false)
+  const preConfirmState = useRef<{ file: File | null; preview: string | null } | null>(null)
 
   const [exporting, setExporting] = useState(false)
   const [saving, setSaving] = useState<'draft' | 'published' | null>(null)
@@ -285,11 +322,10 @@ function ArticuloEditor({
     e.target.value = ''
     if (!file) return
     const dataUrl = await readFileAsDataURL(file)
-    preConfirmState.current = { file: imageSourceFile, preview: imageSourcePreview, crop: imageCrop }
-    setImageSourceFile(file)
-    setImageSourcePreview(dataUrl)
+    preConfirmState.current = { file: imageSourceFile, preview: imageSourcePreview }
+    setRawImageDataUrl(dataUrl)
     setImageCrop({ x: 0, y: 0, zoom: 1 })
-    setCroppedAreaPixels(null)
+    croppedAreaPixelsRef.current = null
     setCropModalOpen(true)
   }
 
@@ -297,13 +333,32 @@ function ArticuloEditor({
     if (preConfirmState.current) {
       setImageSourceFile(preConfirmState.current.file)
       setImageSourcePreview(preConfirmState.current.preview)
-      setImageCrop(preConfirmState.current.crop)
     }
+    setRawImageDataUrl(null)
     setCropModalOpen(false)
   }
 
-  const handleCropConfirm = () => {
-    setCropModalOpen(false)
+  const handleCropConfirm = async () => {
+    const area = croppedAreaPixelsRef.current
+    if (!rawImageDataUrl || !area) {
+      setCropModalOpen(false)
+      setRawImageDataUrl(null)
+      return
+    }
+    setCropping(true)
+    try {
+      const { dataUrl, blob } = await cropImageToCanvas(rawImageDataUrl, area)
+      const croppedFile = new File([blob], 'sponsor-photo-cropped.png', { type: 'image/png' })
+      setImageSourcePreview(dataUrl)
+      setImageSourceFile(croppedFile)
+      setRawImageDataUrl(null)
+      setCropModalOpen(false)
+    } catch (err) {
+      console.error('Error recortando la imagen', err)
+      window.alert('Error al procesar el recorte, intenta de nuevo')
+    } finally {
+      setCropping(false)
+    }
   }
 
   async function captureFullResPng(): Promise<Blob | null> {
@@ -439,16 +494,19 @@ function ArticuloEditor({
 
   return (
     <div style={{ display: 'flex', minHeight: '100%' }}>
-      {cropModalOpen && imageSourcePreview && (
+      {cropModalOpen && rawImageDataUrl && (
         <CropModal
-          image={imageSourcePreview}
+          image={rawImageDataUrl}
           crop={{ x: imageCrop.x, y: imageCrop.y }}
           zoom={imageCrop.zoom}
           onCropChange={c => setImageCrop(prev => ({ ...prev, x: c.x, y: c.y }))}
           onZoomChange={z => setImageCrop(prev => ({ ...prev, zoom: z }))}
-          onCropComplete={(_area, areaPixels) => setCroppedAreaPixels(areaPixels)}
+          onCropComplete={(_area, areaPixels) => {
+            croppedAreaPixelsRef.current = areaPixels
+          }}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+          confirming={cropping}
         />
       )}
 
@@ -491,8 +549,6 @@ function ArticuloEditor({
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    transform: `translate(${imageCrop.x}px, ${imageCrop.y}px) scale(${imageCrop.zoom})`,
-                    transformOrigin: 'top left',
                   }}
                 />
               ) : (
