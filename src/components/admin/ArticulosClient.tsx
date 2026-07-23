@@ -195,6 +195,28 @@ function toggleButtonStyle(active: boolean): React.CSSProperties {
 const CTF_LOGO_BLANCO = 'https://www.figma.com/api/mcp/asset/6e8ec906-e2c3-4df4-bab9-4da8acf69f93'
 const CTF_LOGO_NEGRO = '/Logo-CTF-NegroAmarillo.png'
 
+const TIER_FILTER_OPTIONS = Object.keys(TIER_COLORS)
+const NO_TIER_VALUE = '__none__'
+
+// Pill-style chip, matching the Todos/Con pendientes/100% completos
+// filter buttons in CSDashboardClient.tsx.
+function chipButtonStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.35rem 0.875rem',
+    borderRadius: '99px',
+    border: `1px solid ${active ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`,
+    background: active ? 'var(--theme-text)' : 'transparent',
+    color: active ? 'var(--theme-bg)' : 'var(--theme-text)',
+    fontSize: '0.8125rem',
+    fontWeight: active ? 600 : 400,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  }
+}
+
+type ArticuloFilter = 'all' | 'con' | 'sin' | 'publicado'
+type LogoBlancoFilter = 'all' | 'con' | 'sin'
+
 // Full-screen crop modal, opened right after a new source image is picked.
 function CropModal({
   image,
@@ -940,6 +962,14 @@ function ArticulosClientInner() {
   const [loading, setLoading] = useState(true)
   const [selectedSponsorId, setSelectedSponsorId] = useState<string | number | null>(null)
 
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<{
+    tiers: string[]
+    logoBlanco: LogoBlancoFilter
+    articulo: ArticuloFilter
+  }>({ tiers: [], logoBlanco: 'all', articulo: 'all' })
+
   useEffect(() => {
     Promise.all([
       fetch('/api/sponsors?limit=300&depth=1', { credentials: 'include' }).then(r => r.json()),
@@ -965,6 +995,45 @@ function ArticulosClientInner() {
     () => sponsors.find(s => String(s.id) === String(selectedSponsorId)) ?? null,
     [sponsors, selectedSponsorId],
   )
+
+  const filteredSponsors = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    return sponsors.filter(sponsor => {
+      if (q && !sponsor.companyName?.toLowerCase().includes(q)) return false
+
+      if (activeFilters.tiers.length > 0) {
+        const tierValue = sponsor.tier || NO_TIER_VALUE
+        if (!activeFilters.tiers.includes(tierValue)) return false
+      }
+
+      if (activeFilters.logoBlanco === 'con' && !sponsor.logoBlanco?.url) return false
+      if (activeFilters.logoBlanco === 'sin' && sponsor.logoBlanco?.url) return false
+
+      if (activeFilters.articulo !== 'all') {
+        const article = articleBySponsor.get(String(sponsor.id))
+        const status: ArticleStatus = article ? (article.status === 'published' ? 'published' : 'draft') : 'none'
+        if (activeFilters.articulo === 'con' && status === 'none') return false
+        if (activeFilters.articulo === 'sin' && status !== 'none') return false
+        if (activeFilters.articulo === 'publicado' && status !== 'published') return false
+      }
+
+      return true
+    })
+  }, [sponsors, searchQuery, activeFilters, articleBySponsor])
+
+  const hasActiveFilters =
+    activeFilters.tiers.length > 0 || activeFilters.logoBlanco !== 'all' || activeFilters.articulo !== 'all'
+  const activeFilterCount =
+    activeFilters.tiers.length + (activeFilters.logoBlanco !== 'all' ? 1 : 0) + (activeFilters.articulo !== 'all' ? 1 : 0)
+
+  const toggleTierFilter = (tier: string) => {
+    setActiveFilters(prev => ({
+      ...prev,
+      tiers: prev.tiers.includes(tier) ? prev.tiers.filter(t => t !== tier) : [...prev.tiers, tier],
+    }))
+  }
+
+  const clearFilters = () => setActiveFilters({ tiers: [], logoBlanco: 'all', articulo: 'all' })
 
   const handleArticleSaved = useCallback((sponsorId: string | number, newStatus: 'draft' | 'published') => {
     setArticles(prev => {
@@ -996,13 +1065,187 @@ function ArticulosClientInner() {
         </p>
       </div>
 
+      <div style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: '1', minWidth: '200px', maxWidth: '320px' }}>
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4, pointerEvents: 'none' }}
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar sponsor..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.45rem 0.75rem 0.45rem 2rem',
+                background: 'var(--theme-elevation-50)',
+                border: '1px solid var(--theme-elevation-200)',
+                borderRadius: '6px',
+                color: 'var(--theme-text)',
+                fontSize: '0.875rem',
+                fontFamily: 'inherit',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '0.45rem 0.875rem',
+              background: filtersOpen || hasActiveFilters ? 'var(--theme-text)' : 'transparent',
+              color: filtersOpen || hasActiveFilters ? 'var(--theme-bg)' : 'var(--theme-text)',
+              border: `1px solid ${filtersOpen || hasActiveFilters ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`,
+              borderRadius: '6px',
+              fontSize: '0.8125rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+            </svg>
+            Filtros{hasActiveFilters ? ` · ${activeFilterCount}` : ''}
+          </button>
+        </div>
+
+        {filtersOpen && (
+          <div
+            style={{
+              marginTop: '0.75rem',
+              padding: '1rem',
+              background: 'var(--theme-elevation-50)',
+              border: '1px solid var(--theme-elevation-150)',
+              borderRadius: '8px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.875rem',
+            }}
+          >
+            <div>
+              <label style={labelStyle}>Tier</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {TIER_FILTER_OPTIONS.map(tier => (
+                  <button
+                    key={tier}
+                    type="button"
+                    onClick={() => toggleTierFilter(tier)}
+                    style={chipButtonStyle(activeFilters.tiers.includes(tier))}
+                  >
+                    {tier}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => toggleTierFilter(NO_TIER_VALUE)}
+                  style={chipButtonStyle(activeFilters.tiers.includes(NO_TIER_VALUE))}
+                >
+                  Sin tier
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Logo blanco</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters(prev => ({ ...prev, logoBlanco: prev.logoBlanco === 'con' ? 'all' : 'con' }))}
+                  style={chipButtonStyle(activeFilters.logoBlanco === 'con')}
+                >
+                  Con logo blanco
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters(prev => ({ ...prev, logoBlanco: prev.logoBlanco === 'sin' ? 'all' : 'sin' }))}
+                  style={chipButtonStyle(activeFilters.logoBlanco === 'sin')}
+                >
+                  Sin logo blanco
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label style={labelStyle}>Artículo</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters(prev => ({ ...prev, articulo: prev.articulo === 'con' ? 'all' : 'con' }))}
+                  style={chipButtonStyle(activeFilters.articulo === 'con')}
+                >
+                  Con artículo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters(prev => ({ ...prev, articulo: prev.articulo === 'sin' ? 'all' : 'sin' }))}
+                  style={chipButtonStyle(activeFilters.articulo === 'sin')}
+                >
+                  Sin artículo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilters(prev => ({ ...prev, articulo: prev.articulo === 'publicado' ? 'all' : 'publicado' }))}
+                  style={chipButtonStyle(activeFilters.articulo === 'publicado')}
+                >
+                  Publicado
+                </button>
+              </div>
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                style={{
+                  alignSelf: 'flex-start',
+                  background: 'none',
+                  border: 'none',
+                  color: '#3b82f6',
+                  fontSize: '0.8125rem',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontFamily: 'inherit',
+                  textDecoration: 'underline',
+                }}
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        )}
+
+        <div style={{ marginTop: '0.75rem', fontSize: '0.8125rem', color: 'var(--theme-elevation-500)' }}>
+          {filteredSponsors.length} sponsor{filteredSponsors.length !== 1 ? 's' : ''}
+        </div>
+      </div>
+
       {loading ? (
         <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>Cargando sponsors…</p>
       ) : sponsors.length === 0 ? (
         <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>No hay sponsors registrados.</p>
+      ) : filteredSponsors.length === 0 ? (
+        <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>
+          No hay sponsors que coincidan con la búsqueda o los filtros.
+        </p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-          {sponsors.map(sponsor => {
+          {filteredSponsors.map(sponsor => {
             const article = articleBySponsor.get(String(sponsor.id))
             const status: ArticleStatus = article ? (article.status === 'published' ? 'published' : 'draft') : 'none'
             return (
