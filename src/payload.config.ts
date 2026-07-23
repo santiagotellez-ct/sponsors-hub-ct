@@ -51,7 +51,7 @@ export default buildConfig({
         Icon: '@/components/payload-logo#PayloadIcon',
       },
       beforeDashboard: ['@/components/dashboard-greeting#DashboardGreeting'],
-      afterNavLinks: [   '@/components/admin/EntregablesNavLink#EntregablesNavLink',   '@/components/admin/CSDashboardNavLink#CSDashboardNavLink', ],
+      afterNavLinks: [   '@/components/admin/EntregablesNavLink#EntregablesNavLink',   '@/components/admin/CSDashboardNavLink#CSDashboardNavLink',   '@/components/admin/ArticulosNavLink#ArticulosNavLink', ],
       views: {
   entregables: {
     Component: '@/components/admin/EntregablesView#EntregablesView',
@@ -60,6 +60,10 @@ export default buildConfig({
   csDashboard: {
     Component: '@/components/admin/CSDashboardView#CSDashboardView',
     path: '/cs-dashboard',
+  },
+  articulos: {
+    Component: '@/components/admin/ArticulosView#ArticulosView',
+    path: '/articulos',
   },
 },    },
   },
