@@ -491,6 +491,7 @@ function ArticuloEditor({
   }
 
   const tierColor = sponsor.tier ? TIER_COLORS[sponsor.tier] : null
+  const sponsorLogoUrl = sponsor.logoBlanco?.url || sponsor.logo?.url || null
 
   return (
     <div style={{ display: 'flex', minHeight: '100%' }}>
@@ -595,11 +596,15 @@ function ArticuloEditor({
                 justifyContent: 'space-between',
               }}
             >
-              <img
-                src="/logo-colombia-tech.png"
-                alt="Colombia Tech Week"
-                style={{ height: '38.67px', width: '104.5px', objectFit: 'contain' }}
-              />
+              {sponsorLogoUrl ? (
+                <img
+                  src={sponsorLogoUrl}
+                  alt={sponsor.companyName || ''}
+                  style={{ height: '38.67px', width: '104.5px', objectFit: 'contain' }}
+                />
+              ) : (
+                <div style={{ height: '38.67px', width: '104.5px' }} />
+              )}
               {/* TODO: no Colombia Tech Fest asset exists in /public yet — replace with the
                   final local asset once it's added, then drop this Figma MCP URL. */}
               <img
