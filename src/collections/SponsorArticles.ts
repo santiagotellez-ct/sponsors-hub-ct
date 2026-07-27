@@ -39,6 +39,32 @@ export const SponsorArticles: CollectionConfig = {
       },
     },
     {
+      name: 'categoria',
+      type: 'select',
+      label: 'Categoría temática',
+      options: [
+        { label: 'IA & Automatización', value: 'IA & Automatización' },
+        { label: 'Fintech & Pagos', value: 'Fintech & Pagos' },
+        { label: 'Future of Work', value: 'Future of Work' },
+        { label: 'Movilidad & Logística', value: 'Movilidad & Logística' },
+        { label: 'SaaS & Software', value: 'SaaS & Software' },
+        { label: 'Talento & Educación', value: 'Talento & Educación' },
+        { label: 'Ventas & Marketing', value: 'Ventas & Marketing' },
+        { label: 'Startups & Venture', value: 'Startups & Venture' },
+        { label: 'Ciberseguridad', value: 'Ciberseguridad' },
+        { label: 'E-commerce & Retail', value: 'E-commerce & Retail' },
+      ],
+      admin: {
+        description: 'Categoría temática que aparece como tag en el hub público.',
+      },
+    },
+    {
+      name: 'categoriaText',
+      type: 'text',
+      label: 'Categoría (texto, app-written)',
+      admin: { readOnly: true, description: 'Copiado automáticamente de categoría al guardar.' },
+    },
+    {
       name: 'imagen',
       type: 'upload',
       relationTo: 'media',

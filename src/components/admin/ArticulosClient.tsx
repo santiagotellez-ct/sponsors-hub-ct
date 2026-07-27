@@ -195,6 +195,19 @@ function toggleButtonStyle(active: boolean): React.CSSProperties {
 const CTF_LOGO_BLANCO = 'https://www.figma.com/api/mcp/asset/6e8ec906-e2c3-4df4-bab9-4da8acf69f93'
 const CTF_LOGO_NEGRO = '/Logo-CTF-NegroAmarillo.png'
 
+const CATEGORIA_OPTIONS = [
+  'IA & Automatización',
+  'Fintech & Pagos',
+  'Future of Work',
+  'Movilidad & Logística',
+  'SaaS & Software',
+  'Talento & Educación',
+  'Ventas & Marketing',
+  'Startups & Venture',
+  'Ciberseguridad',
+  'E-commerce & Retail',
+]
+
 const TIER_FILTER_OPTIONS = Object.keys(TIER_COLORS)
 const NO_TIER_VALUE = '__none__'
 
@@ -293,13 +306,14 @@ function ArticuloEditor({
 }: {
   sponsor: any
   onBack: () => void
-  onSaved: (sponsorId: string | number, status: 'draft' | 'published') => void
+  onSaved: (sponsorId: string | number, status: 'draft' | 'published', categoria?: string | null) => void
 }) {
   const [loadingArticle, setLoadingArticle] = useState(true)
   const [articleId, setArticleId] = useState<string | number | null>(null)
   const [eventId, setEventId] = useState<string | number | null>(null)
   const [datoImpactante, setDatoImpactante] = useState('')
   const [articuloCorto, setArticuloCorto] = useState('')
+  const [categoriaState, setCategoriaState] = useState('')
   const [status, setStatus] = useState<'draft' | 'published'>('draft')
   const [slug, setSlug] = useState('')
   const [publishedAt, setPublishedAt] = useState<string | null>(null)
@@ -342,6 +356,7 @@ function ArticuloEditor({
           setEventId(toId(doc.event))
           setDatoImpactante(doc.datoImpactante || '')
           setArticuloCorto(lexicalToPlainText(doc.articuloCorto))
+          setCategoriaState(doc.categoria || '')
           setStatus(doc.status === 'published' ? 'published' : 'draft')
           setSlug(doc.slug || '')
           setPublishedAt(doc.publishedAt || null)
@@ -511,6 +526,8 @@ function ArticuloEditor({
         logoUrl: toAbsoluteUrl(sponsor.logoBlanco?.url || sponsor.logo?.url || null),
         tier: sponsor.tier || null,
         articuloTexto: articuloCorto || null,
+        categoria: categoriaState || null,
+        categoriaText: categoriaState || null,
       }
       if (finalSlug) body.slug = finalSlug
 
@@ -555,7 +572,7 @@ function ArticuloEditor({
       setImageSourceId(finalImageSourceId ?? null)
       setImageSourceFile(null)
       setSaveMessage({ type: 'success', text: targetStatus === 'published' ? 'Artículo publicado.' : 'Borrador guardado.' })
-      onSaved(sponsor.id, targetStatus)
+      onSaved(sponsor.id, targetStatus, categoriaState || null)
     } catch (err: any) {
       setSaveMessage({ type: 'error', text: err?.message || 'Error al guardar el artículo' })
     } finally {
@@ -799,6 +816,22 @@ function ArticuloEditor({
                 style={fieldStyle}
                 placeholder="Copy del onepager, no se muestra sobre la imagen…"
               />
+            </div>
+
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={labelStyle}>Categoría temática</label>
+              <select
+                value={categoriaState}
+                onChange={e => setCategoriaState(e.target.value)}
+                style={fieldStyle}
+              >
+                <option value="">Sin categoría</option>
+                {CATEGORIA_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
@@ -1065,15 +1098,18 @@ function ArticulosClientInner() {
 
   const clearFilters = () => setActiveFilters({ tiers: [], logoBlanco: 'all', articulo: 'all' })
 
-  const handleArticleSaved = useCallback((sponsorId: string | number, newStatus: 'draft' | 'published') => {
-    setArticles(prev => {
-      const idx = prev.findIndex(a => String(toId(a.sponsor)) === String(sponsorId))
-      if (idx === -1) return [...prev, { sponsor: sponsorId, status: newStatus }]
-      const copy = [...prev]
-      copy[idx] = { ...copy[idx], status: newStatus }
-      return copy
-    })
-  }, [])
+  const handleArticleSaved = useCallback(
+    (sponsorId: string | number, newStatus: 'draft' | 'published', newCategoria?: string | null) => {
+      setArticles(prev => {
+        const idx = prev.findIndex(a => String(toId(a.sponsor)) === String(sponsorId))
+        if (idx === -1) return [...prev, { sponsor: sponsorId, status: newStatus, categoria: newCategoria ?? null }]
+        const copy = [...prev]
+        copy[idx] = { ...copy[idx], status: newStatus, categoria: newCategoria ?? null }
+        return copy
+      })
+    },
+    [],
+  )
 
   if (selectedSponsor) {
     return (
