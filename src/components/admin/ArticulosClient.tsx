@@ -459,6 +459,12 @@ function ArticuloEditor({
     }
   }
 
+  const toAbsoluteUrl = (path: string | null | undefined): string | null => {
+    if (!path) return null
+    if (path.startsWith('http')) return path
+    return `${window.location.origin}${path}`
+  }
+
   async function uploadMedia(file: File): Promise<string | number> {
     const formData = new FormData()
     formData.append('file', file)
@@ -502,7 +508,7 @@ function ArticuloEditor({
         status: targetStatus,
         publishedAt: finalPublishedAt,
         companyName: sponsor.companyName || null,
-        logoUrl: sponsor.logoBlanco?.url || sponsor.logo?.url || null,
+        logoUrl: toAbsoluteUrl(sponsor.logoBlanco?.url || sponsor.logo?.url || null),
         tier: sponsor.tier || null,
         articuloTexto: articuloCorto || null,
       }
@@ -535,7 +541,7 @@ function ArticuloEditor({
               method: 'PATCH',
               credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ imagenUrl: finalImagenUrl }),
+              body: JSON.stringify({ imagenUrl: toAbsoluteUrl(finalImagenUrl) }),
             })
           }
         }
