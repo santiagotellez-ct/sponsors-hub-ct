@@ -85,5 +85,50 @@ export const SponsorArticles: CollectionConfig = {
       type: 'date',
       label: 'Fecha de Publicación',
     },
+    {
+      name: 'companyName',
+      type: 'text',
+      label: 'Nombre de la Empresa (copia)',
+      admin: {
+        readOnly: true,
+        description: 'Denormalizado desde el sponsor para lectura pública.',
+      },
+    },
+    {
+      name: 'logoUrl',
+      type: 'text',
+      label: 'URL del Logo (copia)',
+      admin: {
+        readOnly: true,
+        description: 'Denormalizado desde el sponsor para lectura pública.',
+      },
+    },
+    {
+      name: 'tier',
+      type: 'text',
+      label: 'Tier (copia)',
+      admin: {
+        readOnly: true,
+        description: 'Denormalizado desde el sponsor para lectura pública.',
+      },
+    },
+    {
+      name: 'imagenUrl',
+      type: 'text',
+      label: 'URL de Imagen Final (copia)',
+      admin: {
+        readOnly: true,
+        description: 'Denormalizado desde el media de la imagen final para lectura pública.',
+      },
+    },
+    {
+      name: 'articuloTexto',
+      type: 'textarea',
+      label: 'Artículo (texto plano, copia)',
+      admin: {
+        readOnly: true,
+        description: 'Copia en texto plano del artículo corto, para lectura pública.',
+      },
+    },
   ],
 }

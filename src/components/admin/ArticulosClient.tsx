@@ -501,6 +501,10 @@ function ArticuloEditor({
         imageSource: finalImageSourceId ?? null,
         status: targetStatus,
         publishedAt: finalPublishedAt,
+        companyName: sponsor.companyName || null,
+        logoUrl: sponsor.logoBlanco?.url || sponsor.logo?.url || null,
+        tier: sponsor.tier || null,
+        articuloTexto: articuloCorto || null,
       }
       if (finalSlug) body.slug = finalSlug
 
@@ -516,6 +520,26 @@ function ArticuloEditor({
       }
       const data = await res.json()
       const savedDoc = data.doc ?? data
+
+      // The exported PNG's public URL isn't known until after the media doc is
+      // saved and linked, so a second round-trip fetches it back before we can
+      // denormalize it onto the published article for anon reads.
+      if (targetStatus === 'published') {
+        const fetchRes = await fetch(`/api/sponsor-articles/${savedDoc.id}?depth=1`, { credentials: 'include' })
+        if (fetchRes.ok) {
+          const fetchedDoc = await fetchRes.json()
+          const finalImagenUrl =
+            fetchedDoc?.imagen && typeof fetchedDoc.imagen === 'object' ? fetchedDoc.imagen.url : null
+          if (finalImagenUrl) {
+            await fetch(`/api/sponsor-articles/${savedDoc.id}`, {
+              method: 'PATCH',
+              credentials: 'include',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ imagenUrl: finalImagenUrl }),
+            })
+          }
+        }
+      }
 
       setArticleId(savedDoc.id)
       setStatus(targetStatus)
