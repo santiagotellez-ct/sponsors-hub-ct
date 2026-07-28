@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
-import { Filter } from 'lucide-react'
+import { Filter, SlidersHorizontal } from 'lucide-react'
 
 type DeliverableCol = {
   key: string
@@ -75,6 +75,13 @@ function isDueSoonDeliv(d: any, todayMs: number, sevenDaysMs: number) {
   const t = new Date(d.dueDate).getTime()
   return t >= todayMs && t <= sevenDaysMs
 }
+
+const COLUMN_FILTER_STATUSES: { val: string; label: string }[] = [
+  { val: 'completed', label: 'Enviado' },
+  { val: 'published', label: 'Publicado' },
+  { val: 'pending', label: 'Pendiente' },
+  { val: 'overdue', label: 'Vencido' },
+]
 
 function Modal({ data, onClose, onSave }: { data: ModalData | null; onClose: () => void; onSave: (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => Promise<void> }) {
   const [editStatus, setEditStatus] = useState('')
@@ -272,6 +279,17 @@ export const CSDashboardClient: React.FC = () => {
   const [dueDateFilter, setDueDateFilter] = useState<'all' | 'overdue' | 'due_soon' | 'ok'>('all')
   const [filtersOpen, setFiltersOpen] = useState(false)
 
+  // --- Filtros por columna ---
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[]>>({})
+  const [openColumnFilter, setOpenColumnFilter] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!openColumnFilter) return
+    const handler = () => setOpenColumnFilter(null)
+    document.addEventListener('click', handler)
+    return () => document.removeEventListener('click', handler)
+  }, [openColumnFilter])
+
   const handleSaveDeliverable = useCallback(async (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => {
     const sponsor = sponsors.find(s => String(s.id) === String(sponsorId))
     if (!sponsor) throw new Error('Sponsor no encontrado')
@@ -350,7 +368,8 @@ export const CSDashboardClient: React.FC = () => {
     (overdueFilter !== null ? 1 : 0) +
     (completionFilter !== 'all' ? 1 : 0) +
     (publishedFilter !== 'all' ? 1 : 0) +
-    (dueDateFilter !== 'all' ? 1 : 0)
+    (dueDateFilter !== 'all' ? 1 : 0) +
+    Object.values(columnFilters).filter(v => v.length > 0).length
 
   const filtered = useMemo(() => {
     return sponsors.filter(s => {
@@ -428,7 +447,9 @@ export const CSDashboardClient: React.FC = () => {
   }, [filtered])
 
   const rows = useMemo<SponsorRow[]>(() => {
-    return filtered.map(s => {
+    const activeColumnFilters = Object.entries(columnFilters).filter(([, v]) => v.length > 0)
+    const result: SponsorRow[] = []
+    for (const s of filtered) {
       const part = activePart(s)
       const delivMap: Record<string, any> = {}
       let total = 0, completed = 0
@@ -437,9 +458,24 @@ export const CSDashboardClient: React.FC = () => {
         delivMap[key] = d; total++
         if (d.status === 'completed') completed++
       }
-      return { id: s.id, name: s.companyName || 'Sin nombre', planName: normalizePlan(part?.plan), deliverables: delivMap, total, completed }
-    })
-  }, [filtered])
+
+      let passesColumnFilters = true
+      for (const [colKey, allowedStatuses] of activeColumnFilters) {
+        const deliv = delivMap[colKey]
+        const isEmpty = !deliv || deliv.status == null
+        const matchesEmpty = allowedStatuses.includes('__empty__') && isEmpty
+        const matchesStatus = !isEmpty && allowedStatuses.includes(deliv.status)
+        if (!matchesEmpty && !matchesStatus) {
+          passesColumnFilters = false
+          break
+        }
+      }
+      if (!passesColumnFilters) continue
+
+      result.push({ id: s.id, name: s.companyName || 'Sin nombre', planName: normalizePlan(part?.plan), deliverables: delivMap, total, completed })
+    }
+    return result
+  }, [filtered, columnFilters])
 
   const stats = useMemo(() => {
     let totalDelivs = 0, completedDelivs = 0
@@ -597,21 +633,103 @@ export const CSDashboardClient: React.FC = () => {
         ) : rows.length === 0 ? (
           <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>No hay cuentas que coincidan con los filtros.</p>
         ) : (
-          <div style={{ border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', overflow: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
+          <div onScroll={() => setOpenColumnFilter(null)} style={{ border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', overflow: 'auto', maxHeight: 'calc(100vh - 340px)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem', minWidth: `${240 + cols.length * COL_W}px` }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, zIndex: 20 }}>
                   <th style={{ ...thBase, position: 'sticky', left: 0, zIndex: 25, minWidth: '200px', width: '200px', textAlign: 'left' }}>Cuenta</th>
                   <th style={{ ...thBase, minWidth: '110px', width: '110px', textAlign: 'left' }}>Plan</th>
                   <th style={{ ...thBase, minWidth: '90px', width: '90px', textAlign: 'center' }}>Avance</th>
-                  {cols.map(c => (
-                    <th key={c.key} style={{ ...thBase, minWidth: `${COL_W}px`, width: `${COL_W}px`, textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: `${COL_W - 16}px`, display: 'block' }} title={c.itemName}>{c.itemName}</span>
-                        {c.benefitCategory && <span style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} title={c.benefitCategory}>{c.benefitCategory}</span>}
-                      </div>
-                    </th>
-                  ))}
+                  {cols.map(c => {
+                    const colFilterActive = (columnFilters[c.key]?.length ?? 0) > 0
+                    return (
+                      <th key={c.key} style={{ ...thBase, minWidth: `${COL_W}px`, width: `${COL_W}px`, textAlign: 'center', position: 'relative' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', maxWidth: `${COL_W - 16}px` }}>
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }} title={c.itemName}>{c.itemName}</span>
+                            <button
+                              type="button"
+                              title="Filtrar columna"
+                              onClick={e => {
+                                e.stopPropagation()
+                                setOpenColumnFilter(prev => (prev === c.key ? null : c.key))
+                              }}
+                              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: colFilterActive ? '#FEDD5A' : 'var(--theme-elevation-400)', flexShrink: 0 }}
+                            >
+                              <SlidersHorizontal size={12} />
+                            </button>
+                          </div>
+                          {c.benefitCategory && <span style={{ fontSize: '0.6rem', opacity: 0.5, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }} title={c.benefitCategory}>{c.benefitCategory}</span>}
+                        </div>
+
+                        {openColumnFilter === c.key && (
+                          <div
+                            onClick={e => e.stopPropagation()}
+                            style={{ position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)', zIndex: 100, background: 'var(--theme-elevation-100)', border: '1px solid var(--theme-elevation-200)', borderRadius: '8px', padding: '8px', minWidth: '180px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)', textAlign: 'left', textTransform: 'none', letterSpacing: 'normal', fontWeight: 400 }}
+                          >
+                            {COLUMN_FILTER_STATUSES.map(opt => {
+                              const checked = columnFilters[c.key]?.includes(opt.val) ?? false
+                              return (
+                                <div
+                                  key={opt.val}
+                                  onClick={() => {
+                                    setColumnFilters(prev => {
+                                      const current = prev[c.key] || []
+                                      const next = checked ? current.filter(v => v !== opt.val) : [...current, opt.val]
+                                      return { ...prev, [c.key]: next }
+                                    })
+                                  }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-150)' }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
+                                  style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8125rem', color: 'var(--theme-text)' }}
+                                >
+                                  <input type="checkbox" checked={checked} readOnly style={{ pointerEvents: 'none' }} />
+                                  {opt.label}
+                                </div>
+                              )
+                            })}
+                            {(() => {
+                              const emptyChecked = columnFilters[c.key]?.includes('__empty__') ?? false
+                              return (
+                                <div
+                                  onClick={() => {
+                                    setColumnFilters(prev => {
+                                      const current = prev[c.key] || []
+                                      const next = emptyChecked
+                                        ? current.filter(v => v !== '__empty__')
+                                        : [...current, '__empty__']
+                                      return { ...prev, [c.key]: next }
+                                    })
+                                  }}
+                                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--theme-elevation-150)' }}
+                                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
+                                  style={{ display: 'flex', gap: '8px', alignItems: 'center', cursor: 'pointer', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8125rem', color: 'var(--theme-text)', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--theme-elevation-200)' }}
+                                >
+                                  <input type="checkbox" checked={emptyChecked} readOnly style={{ pointerEvents: 'none' }} />
+                                  (Vacío)
+                                </div>
+                              )
+                            })()}
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px', paddingTop: '6px', borderTop: '1px solid var(--theme-elevation-150)' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setColumnFilters(prev => {
+                                    const next = { ...prev }
+                                    delete next[c.key]
+                                    return next
+                                  })
+                                }}
+                                style={{ background: 'none', border: 'none', color: 'var(--theme-elevation-500)', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', padding: '2px 4px' }}
+                              >
+                                Limpiar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </th>
+                    )
+                  })}
                 </tr>
               </thead>
               <tbody>
