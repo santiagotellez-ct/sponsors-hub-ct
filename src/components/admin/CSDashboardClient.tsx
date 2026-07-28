@@ -48,6 +48,7 @@ const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot
   pending:   { label: '○ Pendiente', bg: '#fef3c7', color: '#92400e', dot: '#f59e0b' },
   overdue:   { label: '! Vencido',   bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' },
   published: { label: '★ Publicado', bg: '#ede9fe', color: '#4c1d95', dot: '#7c3aed' },
+  in_progress_grid: { label: '↗ En Progreso', bg: '#dbeafe', color: '#1e40af', dot: '#3b82f6' },
 }
 
 function statusCfg(status?: string) {
@@ -80,6 +81,7 @@ const COLUMN_FILTER_STATUSES: { val: string; label: string }[] = [
   { val: 'completed', label: 'Enviado' },
   { val: 'published', label: 'Publicado' },
   { val: 'pending', label: 'Pendiente' },
+  { val: 'in_progress_grid', label: 'En Progreso - Parrilla' },
   { val: 'overdue', label: 'Vencido' },
 ]
 

@@ -310,6 +310,7 @@ export const Sponsors: CollectionConfig = {
                 { label: 'Pendiente', value: 'pending' },
                 { label: 'Completado', value: 'completed' },
                 { label: 'Vencido', value: 'overdue' },
+                { label: 'En Progreso - Parrilla', value: 'in_progress_grid' },
                 { label: 'Publicado', value: 'published' },
               ],
               label: 'Estado',
