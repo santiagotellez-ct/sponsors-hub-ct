@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react'
+import { Filter } from 'lucide-react'
 
 type DeliverableCol = {
   key: string
@@ -51,6 +52,28 @@ const STATUS_CFG: Record<string, { label: string; bg: string; color: string; dot
 
 function statusCfg(status?: string) {
   return STATUS_CFG[status ?? ''] ?? { label: '—', bg: 'var(--theme-elevation-100)', color: 'var(--theme-elevation-400)', dot: 'var(--theme-elevation-300)' }
+}
+
+const TIER_OPTIONS = ['Diamond', 'Platinum', 'Gold', 'Silver', 'Bronze', 'Aliados', 'Experiencia', 'Presenta', 'Media Partner']
+
+const COMPLETION_OPTIONS: { val: 'all' | 'none' | 'partial' | 'complete'; label: string }[] = [
+  { val: 'all', label: 'Todos' },
+  { val: 'none', label: 'Sin iniciar' },
+  { val: 'partial', label: 'En progreso' },
+  { val: 'complete', label: 'Completos' },
+]
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function isOverdueDeliv(d: any, todayMs: number) {
+  if (!d.dueDate || d.status === 'completed' || d.status === 'published') return false
+  return new Date(d.dueDate).getTime() < todayMs
+}
+
+function isDueSoonDeliv(d: any, todayMs: number, sevenDaysMs: number) {
+  if (!d.dueDate || d.status === 'completed' || d.status === 'published') return false
+  const t = new Date(d.dueDate).getTime()
+  return t >= todayMs && t <= sevenDaysMs
 }
 
 function Modal({ data, onClose, onSave }: { data: ModalData | null; onClose: () => void; onSave: (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => Promise<void> }) {
@@ -241,6 +264,14 @@ export const CSDashboardClient: React.FC = () => {
   const [modalData, setModalData] = useState<ModalData | null>(null)
   const closeModal = useCallback(() => setModalData(null), [])
 
+  // --- Filtros avanzados ---
+  const [tierFilter, setTierFilter] = useState<string[]>([])
+  const [overdueFilter, setOverdueFilter] = useState<boolean | null>(null)
+  const [completionFilter, setCompletionFilter] = useState<'all' | 'none' | 'partial' | 'complete'>('all')
+  const [publishedFilter, setPublishedFilter] = useState<'all' | 'published' | 'unpublished'>('all')
+  const [dueDateFilter, setDueDateFilter] = useState<'all' | 'overdue' | 'due_soon' | 'ok'>('all')
+  const [filtersOpen, setFiltersOpen] = useState(false)
+
   const handleSaveDeliverable = useCallback(async (sponsorId: string | number, delivKey: string, newStatus: string, newLink: string) => {
     const sponsor = sponsors.find(s => String(s.id) === String(sponsorId))
     if (!sponsor) throw new Error('Sponsor no encontrado')
@@ -309,6 +340,18 @@ export const CSDashboardClient: React.FC = () => {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name))
   }, [sponsors])
 
+  const availableTiers = useMemo(() => {
+    const present = new Set(sponsors.map(s => s.tier).filter(Boolean))
+    return TIER_OPTIONS.filter(t => present.has(t))
+  }, [sponsors])
+
+  const activeAdvancedFilterCount =
+    tierFilter.length +
+    (overdueFilter !== null ? 1 : 0) +
+    (completionFilter !== 'all' ? 1 : 0) +
+    (publishedFilter !== 'all' ? 1 : 0) +
+    (dueDateFilter !== 'all' ? 1 : 0)
+
   const filtered = useMemo(() => {
     return sponsors.filter(s => {
       const part = activePart(s)
@@ -326,9 +369,51 @@ export const CSDashboardClient: React.FC = () => {
         const delivs = part.deliverables || []
         if (delivs.every((d: any) => d.status === 'completed')) return false
       }
+
+      // --- Filtros avanzados ---
+      if (tierFilter.length > 0 && !tierFilter.includes(s.tier)) return false
+
+      if (completionFilter !== 'all') {
+        const delivs = part.deliverables || []
+        const total = delivs.length
+        const completed = delivs.filter((d: any) => d.status === 'completed').length
+        if (completionFilter === 'none' && completed !== 0) return false
+        if (completionFilter === 'partial' && !(completed > 0 && completed < total)) return false
+        if (completionFilter === 'complete' && !(completed === total && total > 0)) return false
+      }
+
+      if (overdueFilter !== null) {
+        const delivs = part.deliverables || []
+        const hasOverdue = delivs.some((d: any) => d.status === 'overdue')
+        if (overdueFilter === true && !hasOverdue) return false
+        if (overdueFilter === false && hasOverdue) return false
+      }
+
+      if (publishedFilter !== 'all') {
+        const delivs = part.deliverables || []
+        const hasPublished = delivs.some((d: any) => d.status === 'published')
+        if (publishedFilter === 'published' && !hasPublished) return false
+        if (publishedFilter === 'unpublished' && hasPublished) return false
+      }
+
+      if (dueDateFilter !== 'all') {
+        const delivs = part.deliverables || []
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+        const todayMs = todayStart.getTime()
+        const sevenDaysMs = todayMs + 7 * DAY_MS
+        if (dueDateFilter === 'overdue' && !delivs.some((d: any) => isOverdueDeliv(d, todayMs))) return false
+        if (dueDateFilter === 'due_soon' && !delivs.some((d: any) => isDueSoonDeliv(d, todayMs, sevenDaysMs))) return false
+        if (
+          dueDateFilter === 'ok' &&
+          delivs.some((d: any) => isOverdueDeliv(d, todayMs) || isDueSoonDeliv(d, todayMs, sevenDaysMs))
+        )
+          return false
+      }
+
       return true
     })
-  }, [sponsors, search, planFilter, statusFilter])
+  }, [sponsors, search, planFilter, statusFilter, tierFilter, completionFilter, overdueFilter, publishedFilter, dueDateFilter])
 
   const cols = useMemo<DeliverableCol[]>(() => {
     const map = new Map<string, DeliverableCol>()
@@ -409,8 +494,103 @@ export const CSDashboardClient: React.FC = () => {
               <button key={opt.val} type="button" onClick={() => setStatusFilter(opt.val)} style={{ padding: '0.35rem 0.875rem', borderRadius: '99px', border: `1px solid ${statusFilter === opt.val ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`, background: statusFilter === opt.val ? 'var(--theme-text)' : 'transparent', color: statusFilter === opt.val ? 'var(--theme-bg)' : 'var(--theme-text)', fontSize: '0.8125rem', fontWeight: statusFilter === opt.val ? 600 : 400, cursor: 'pointer', fontFamily: 'inherit' }}>{opt.label}</button>
             ))}
           </div>
-          <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--theme-elevation-500)' }}>{rows.length} cuenta{rows.length !== 1 ? 's' : ''} · {cols.length} entregable{cols.length !== 1 ? 's' : ''}</span>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(o => !o)}
+            style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '0.35rem 0.875rem', borderRadius: '99px', border: `1px solid ${filtersOpen ? 'var(--theme-text)' : 'var(--theme-elevation-200)'}`, background: filtersOpen ? 'var(--theme-text)' : 'transparent', color: filtersOpen ? 'var(--theme-bg)' : 'var(--theme-text)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+          >
+            <Filter size={13} />
+            Filtros avanzados
+            {activeAdvancedFilterCount > 0 && (
+              <span style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444' }} />
+            )}
+          </button>
+          <span style={{ marginLeft: 'auto', fontSize: '0.8125rem', color: 'var(--theme-elevation-500)' }}>
+            {rows.length} cuenta{rows.length !== 1 ? 's' : ''} · {cols.length} entregable{cols.length !== 1 ? 's' : ''}
+            {activeAdvancedFilterCount > 0 ? ` · ${activeAdvancedFilterCount} filtros activos` : ''}
+          </span>
         </div>
+
+        {filtersOpen && (
+          <div style={{ background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-200)', borderRadius: '8px', padding: '16px', marginTop: '8px', marginBottom: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <div style={filterLabelStyle}>Tier</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {availableTiers.map(t => {
+                  const active = tierFilter.includes(t)
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTierFilter(prev => (active ? prev.filter(x => x !== t) : [...prev, t]))}
+                      style={chipStyle(active)}
+                    >
+                      {t}
+                    </button>
+                  )
+                })}
+                {availableTiers.length === 0 && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--theme-elevation-400)' }}>Sin datos</span>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <div style={filterLabelStyle}>Completitud</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {COMPLETION_OPTIONS.map(opt => (
+                  <button key={opt.val} type="button" onClick={() => setCompletionFilter(opt.val)} style={chipStyle(completionFilter === opt.val)}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div style={filterLabelStyle}>Entregables vencidos</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button type="button" onClick={() => setOverdueFilter(null)} style={chipStyle(overdueFilter === null)}>Todos</button>
+                <button type="button" onClick={() => setOverdueFilter(true)} style={chipStyle(overdueFilter === true)}>Con vencidos</button>
+                <button type="button" onClick={() => setOverdueFilter(false)} style={chipStyle(overdueFilter === false)}>Sin vencidos</button>
+              </div>
+            </div>
+
+            <div>
+              <div style={filterLabelStyle}>Publicación</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button type="button" onClick={() => setPublishedFilter('all')} style={chipStyle(publishedFilter === 'all')}>Todos</button>
+                <button type="button" onClick={() => setPublishedFilter('published')} style={chipStyle(publishedFilter === 'published')}>Con publicados</button>
+                <button type="button" onClick={() => setPublishedFilter('unpublished')} style={chipStyle(publishedFilter === 'unpublished')}>Sin publicados</button>
+              </div>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <div style={filterLabelStyle}>Fecha límite</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                <button type="button" onClick={() => setDueDateFilter('all')} style={chipStyle(dueDateFilter === 'all')}>Todos</button>
+                <button type="button" onClick={() => setDueDateFilter('overdue')} style={chipStyle(dueDateFilter === 'overdue')}>Vencidos</button>
+                <button type="button" onClick={() => setDueDateFilter('due_soon')} style={chipStyle(dueDateFilter === 'due_soon')}>Próximos 7 días</button>
+                <button type="button" onClick={() => setDueDateFilter('ok')} style={chipStyle(dueDateFilter === 'ok')}>Al día</button>
+              </div>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setTierFilter([])
+                  setOverdueFilter(null)
+                  setCompletionFilter('all')
+                  setPublishedFilter('all')
+                  setDueDateFilter('all')
+                }}
+                style={{ padding: '0.4rem 0.875rem', borderRadius: '6px', border: '1px solid var(--theme-elevation-200)', background: 'transparent', color: 'var(--theme-elevation-500)', fontSize: '0.8125rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                Limpiar filtros
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <p style={{ color: 'var(--theme-elevation-500)', fontSize: '0.875rem', padding: '2rem 0' }}>Cargando sponsors…</p>
@@ -484,4 +664,27 @@ const tdBase: React.CSSProperties = {
   padding: '0.625rem 0.875rem',
   verticalAlign: 'middle',
   color: 'var(--theme-text)',
+}
+
+const filterLabelStyle: React.CSSProperties = {
+  fontSize: '0.6875rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  color: 'var(--theme-elevation-500)',
+  marginBottom: '8px',
+}
+
+function chipStyle(active: boolean): React.CSSProperties {
+  return {
+    padding: '0.3rem 0.75rem',
+    borderRadius: '99px',
+    border: active ? 'none' : '1px solid var(--theme-elevation-200)',
+    background: active ? 'var(--theme-text)' : 'transparent',
+    color: active ? 'var(--theme-bg)' : 'var(--theme-text)',
+    fontSize: '0.75rem',
+    fontWeight: active ? 600 : 400,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  }
 }
