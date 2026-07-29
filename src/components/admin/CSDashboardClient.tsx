@@ -212,7 +212,9 @@ function DelivCell({ deliv, colType, sponsorName, colName, sponsorId, delivKey, 
   if (!deliv) {
     return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}><span style={{ color: 'var(--theme-elevation-250)', fontSize: '0.875rem' }}>—</span></div>
   }
-  const isClickable = deliv.status === 'completed' || deliv.status === 'published'
+  const isClickable = deliv.status === 'completed' ||
+    deliv.status === 'published' ||
+    deliv.status === 'in_progress_grid'
   const handleClick = () => {
     if (!isClickable) return
     // Archivo subido (imagen, documento o direct con archivo)
