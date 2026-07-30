@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toBlob } from 'html-to-image'
 import Cropper from 'react-easy-crop'
+import { compressImageForUpload } from '@/lib/compress-image-for-upload'
 
 const TIER_COLORS: Record<string, string> = {
   Diamond: '#b9f2ff',
@@ -76,15 +77,34 @@ async function cropImageToCanvas(
   area: CroppedAreaPixels,
 ): Promise<{ dataUrl: string; blob: Blob }> {
   const img = await loadImageElement(imageSrc)
+  const cropWidth = Math.max(1, Math.round(area.width))
+  const cropHeight = Math.max(1, Math.round(area.height))
+  const maxWidth = 1080
+  const maxHeight = 1350
+  const scale = Math.min(1, maxWidth / cropWidth, maxHeight / cropHeight)
   const canvas = document.createElement('canvas')
-  canvas.width = Math.max(1, Math.round(area.width))
-  canvas.height = Math.max(1, Math.round(area.height))
+  canvas.width = Math.max(1, Math.round(cropWidth * scale))
+  canvas.height = Math.max(1, Math.round(cropHeight * scale))
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('No se pudo procesar la imagen')
-  ctx.drawImage(img, area.x, area.y, area.width, area.height, 0, 0, canvas.width, canvas.height)
-  const dataUrl = canvas.toDataURL('image/png')
+  ctx.drawImage(
+    img,
+    area.x,
+    area.y,
+    area.width,
+    area.height,
+    0,
+    0,
+    canvas.width,
+    canvas.height,
+  )
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92)
   const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(b => (b ? resolve(b) : reject(new Error('No se pudo generar la imagen recortada'))), 'image/png')
+    canvas.toBlob(
+      b => (b ? resolve(b) : reject(new Error('No se pudo generar la imagen recortada'))),
+      'image/jpeg',
+      0.92,
+    )
   })
   return { dataUrl, blob }
 }
@@ -406,7 +426,7 @@ function ArticuloEditor({
     setCropping(true)
     try {
       const { dataUrl, blob } = await cropImageToCanvas(rawImageDataUrl, area)
-      const croppedFile = new File([blob], 'sponsor-photo-cropped.png', { type: 'image/png' })
+      const croppedFile = new File([blob], 'sponsor-photo-cropped.jpg', { type: 'image/jpeg' })
       setImageSourcePreview(dataUrl)
       setImageSourceFile(croppedFile)
       setRawImageDataUrl(null)
@@ -480,10 +500,19 @@ function ArticuloEditor({
     return `${window.location.origin}${path}`
   }
 
-  async function uploadMedia(file: File): Promise<string | number> {
+  async function uploadMedia(file: File | Blob, filename: string): Promise<string | number> {
+    const compressed = await compressImageForUpload(file, filename, {
+      maxWidth: 1080,
+      maxHeight: 1350,
+    })
     const formData = new FormData()
-    formData.append('file', file)
+    formData.append('file', compressed)
     const res = await fetch('/api/media', { method: 'POST', credentials: 'include', body: formData })
+    if (res.status === 413) {
+      throw new Error(
+        'La imagen es demasiado grande para el servidor (máx. ~4 MB). Usa una foto de menor resolución.',
+      )
+    }
     if (!res.ok) throw new Error('Error subiendo el archivo')
     const data = await res.json()
     return data.doc.id
@@ -495,7 +524,7 @@ function ArticuloEditor({
     try {
       let finalImageSourceId = imageSourceId
       if (imageSourceFile) {
-        finalImageSourceId = await uploadMedia(imageSourceFile)
+        finalImageSourceId = await uploadMedia(imageSourceFile, imageSourceFile.name)
       }
 
       // The exported PNG is the final artifact for this article, so we
@@ -506,7 +535,7 @@ function ArticuloEditor({
         const blob = await captureFullResPng()
         if (blob) {
           const filename = `${slug || slugify(sponsor.companyName) || 'sponsor'}-1080x1350.png`
-          finalImagenId = await uploadMedia(new File([blob], filename, { type: 'image/png' }))
+          finalImagenId = await uploadMedia(blob, filename.replace(/\.png$/i, '.jpg'))
         }
       }
 
