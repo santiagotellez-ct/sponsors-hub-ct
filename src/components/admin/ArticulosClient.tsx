@@ -57,6 +57,25 @@ function readFileAsDataURL(file: File): Promise<string> {
   })
 }
 
+// html-to-image reads the capture node's images back out of a <canvas>,
+// which throws on cross-origin sources (Supabase media, sponsor CDN logos).
+// Converting to a data: URL before rendering keeps everything the canvas
+// ever sees same-origin.
+async function toDataUrl(url: string): Promise<string> {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onloadend = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return url
+  }
+}
+
 function loadImageElement(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -212,8 +231,8 @@ function toggleButtonStyle(active: boolean): React.CSSProperties {
   }
 }
 
-const CTF_LOGO_BLANCO = 'https://www.figma.com/api/mcp/asset/6e8ec906-e2c3-4df4-bab9-4da8acf69f93'
 const CTF_LOGO_NEGRO = '/Logo-CTF-NegroAmarillo.png'
+const CTF_LOGO_BLANCO = '/Logo-CTF-Blanco.png'
 
 const CATEGORIA_OPTIONS = [
   'IA & Automatización',
@@ -344,6 +363,13 @@ function ArticuloEditor({
   const [imageSourceFile, setImageSourceFile] = useState<File | null>(null) // actual cropped result, pending upload
   const [imageSourcePreview, setImageSourcePreview] = useState<string | null>(null) // actual cropped result, as a data URL
 
+  // base64 mirrors of the preview images, used only inside the capture node
+  // (see toDataUrl) so html-to-image never has to read a cross-origin src
+  // off the canvas. Original URLs stay in state above for the right panel.
+  const [imageSourceBase64, setImageSourceBase64] = useState<string | null>(null)
+  const [sponsorLogoBase64, setSponsorLogoBase64] = useState<string | null>(null)
+  const [ctfLogoBase64, setCtfLogoBase64] = useState<string | null>(null)
+
   const [rawImageDataUrl, setRawImageDataUrl] = useState<string | null>(null) // uncropped pick, only while the crop modal is open
   const [imageCrop, setImageCrop] = useState({ x: 0, y: 0, zoom: 1 }) // pan/zoom for the crop modal only — not used for rendering
   const croppedAreaPixelsRef = useRef<CroppedAreaPixels | null>(null)
@@ -394,6 +420,24 @@ function ArticuloEditor({
   }, [sponsor.id])
 
   const previewImageUrl = imageSourcePreview || imageSourceUrl
+
+  useEffect(() => {
+    let cancelled = false
+    if (!previewImageUrl) {
+      setImageSourceBase64(null)
+      return
+    }
+    if (previewImageUrl.startsWith('data:')) {
+      setImageSourceBase64(previewImageUrl)
+      return
+    }
+    toDataUrl(previewImageUrl).then(dataUrl => {
+      if (!cancelled) setImageSourceBase64(dataUrl)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [previewImageUrl])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -616,6 +660,30 @@ function ArticuloEditor({
     : sponsor.logo?.url || null
   const ctfLogoUrl = ctfLogoVariant === 'blanco' ? CTF_LOGO_BLANCO : CTF_LOGO_NEGRO
 
+  useEffect(() => {
+    let cancelled = false
+    if (!sponsorLogoUrl) {
+      setSponsorLogoBase64(null)
+      return
+    }
+    toDataUrl(sponsorLogoUrl).then(dataUrl => {
+      if (!cancelled) setSponsorLogoBase64(dataUrl)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [sponsorLogoUrl])
+
+  useEffect(() => {
+    let cancelled = false
+    toDataUrl(ctfLogoUrl).then(dataUrl => {
+      if (!cancelled) setCtfLogoBase64(dataUrl)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [ctfLogoUrl])
+
   return (
     <div style={{ display: 'flex', minHeight: '100%' }}>
       {cropModalOpen && rawImageDataUrl && (
@@ -664,7 +732,7 @@ function ArticuloEditor({
             <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
               {previewImageUrl ? (
                 <img
-                  src={previewImageUrl}
+                  src={imageSourceBase64 || previewImageUrl}
                   alt=""
                   style={{
                     position: 'absolute',
@@ -721,7 +789,7 @@ function ArticuloEditor({
             >
               {sponsorLogoUrl ? (
                 <img
-                  src={sponsorLogoUrl}
+                  src={sponsorLogoBase64 || sponsorLogoUrl}
                   alt={sponsor.companyName || ''}
                   style={{ height: '38.67px', width: '104.5px', objectFit: 'contain' }}
                 />
@@ -729,7 +797,7 @@ function ArticuloEditor({
                 <div style={{ height: '38.67px', width: '104.5px' }} />
               )}
               <img
-                src={ctfLogoUrl}
+                src={ctfLogoBase64 || ctfLogoUrl}
                 alt="Colombia Tech Fest"
                 style={{ height: '31.25px', width: '104.5px', objectFit: 'contain' }}
               />
